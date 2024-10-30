@@ -3,28 +3,32 @@
 set -e
 set -x
 
-export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
-export DATA_DIR="/path/to/your/data/directory"
-export MODEL_DIR="/path/to/your/model/directory"
+export CUDA_VISIBLE_DEVICES=0
+export DATA_DIR="/root/LLaVA-RLHF/data_dir"
+export MODEL_DIR="/root/LLaVA-RLHF/model_dir"
 export PYTHONPATH="$PWD:$PYTHONPATH"
-export GPUS_PER_NODE=8
+export GPUS_PER_NODE=1
 export OMP_NUM_THREADS=8
-
 
 # MODEL CONFIG
 VISION_TOWER=openai/clip-vit-large-patch14-336
-LM_MODEL_NAME=LLaVA-RLHF-13b-v1.5-336/sft_model
+LM_MODEL_NAME=LLaVA-RLHF-7b-v1.5-224/sft_model/
 
 # DATA CONFIG
 PREFERENCE_DATA=llava_7b_v1_preference.json
 
 # SAVE CONFIG
-MODEL_NAME=LLaVA-Fact-RM-13b-v1.5-336-lora-padding
+MODEL_NAME=LLaVA-Fact-RM-7b-v1.5-224-lora-padding
+
+# WANDB CONFIG
+export WANDB_PROJECT="llava-rlhf"
+export WANDB_NAME="$MODEL_NAME-$(date +%Y%m%d_%H%M%S)"
+export WANDB_ENTITY="skyrobo"  # Replace with your wandb username or organization
 
 # TRAINING CONFIG
 NUM_EPOCHS=1
 LEARNING_RATE=2e-5
-BATCH_SIZE=4
+BATCH_SIZE=1
 GRAD_ACCUMULATION=1
 
 torchrun \
@@ -69,11 +73,12 @@ torchrun \
     --warmup_ratio 0.03 \
     --lr_scheduler_type "constant_with_warmup" \
     --logging_steps 5 \
-    --report_to "tensorboard" \
+    --report_to "wandb" \
     --ddp_backend "nccl" \
     --bf16 True \
-    --ddp_find_unused_parameters False \
+    --ddp_find_unused_parameters True \
     --resume_from_training True \
     --reward_prompt_file "./prompts/fact_rlhf_reward_prompt.txt" \
     --image_to_caption_file "$DATA_DIR/image_to_caption.json" \
-    --image_aspect_ratio 'pad'
+    --image_aspect_ratio 'pad' \
+    --run_name "$WANDB_NAME"

@@ -14,6 +14,7 @@
 # limitations under the License.
 
 from argparse import Namespace
+from dataclasses import dataclass
 import os
 from typing import Optional, Dict, Sequence, Union
 
@@ -133,7 +134,7 @@ class RewardConfig(transformers.PretrainedConfig):
         super(RewardConfig, self).__init__(**kwargs)
         self.backbone_model_name_or_path = backbone_model_name_or_path
 
-
+@dataclass
 class RewardModelOutput(ModelOutput):
     rewards: Tensor = None
 

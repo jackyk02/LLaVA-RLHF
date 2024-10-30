@@ -1,0 +1,12 @@
+llava @ git+https://github.com/jackyk02/LLaVA@0f7b3866f31569e96844d9dae58a2a099f3e8c43
+protobuf
+torch
+torchvision
+torchaudio
+deepspeed
+peft
+transformers
+bitsandbytes
+datasets
+wandb
+#accelerate==0.21.0
