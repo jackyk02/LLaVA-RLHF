@@ -15,7 +15,7 @@ VISION_TOWER=openai/clip-vit-large-patch14-336
 LM_MODEL_NAME=LLaVA-RLHF-7b-v1.5-224/sft_model/
 
 # DATA CONFIG
-PREFERENCE_DATA=llava_7b_v1_preference.json
+PREFERENCE_DATA=LLaVA-Human-Preference-10K/llava_7b_v1_preference.json
 
 # SAVE CONFIG
 MODEL_NAME=LLaVA-Fact-RM-7b-v1.5-224-lora-padding
@@ -79,6 +79,6 @@ torchrun \
     --ddp_find_unused_parameters True \
     --resume_from_training True \
     --reward_prompt_file "./prompts/fact_rlhf_reward_prompt.txt" \
-    --image_to_caption_file "$DATA_DIR/image_to_caption.json" \
+    --image_to_caption_file "$DATA_DIR/LLaVA-RLHF-Data/image_to_caption.json" \
     --image_aspect_ratio 'pad' \
     --run_name "$WANDB_NAME"
