@@ -99,7 +99,7 @@ def preprocess_for_reward_modeling(
             query_len=query_len,
             response_len=response_len,
             reward_model_prompt=reward_model_prompt,
-            image_captions=[image_captions],
+            image_captions=None,
         )
 
     # TODO(sheng): hack for LLAVA_V1, LLaMA2
