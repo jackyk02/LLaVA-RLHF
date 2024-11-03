@@ -1,4 +1,4 @@
-llava @ git+https://github.com/jackyk02/LLaVA@0f7b3866f31569e96844d9dae58a2a099f3e8c43
+llava @ git+https://github.com/jackyk02/LLaVA@3b0c8343aee4979810ab27f71593fe4fba3c1c48
 protobuf
 torch
 torchvision
