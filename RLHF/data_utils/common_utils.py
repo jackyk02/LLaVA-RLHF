@@ -376,23 +376,24 @@ def preprocess_v1(
 
         reward_model_prompt_per_example = reward_model_prompt
 
-        if (
-            image_captions is not None
-            and r"{factual_prompt}" in reward_model_prompt_per_example
-        ):
-            factual_prompt = FACTUAL_PROMPT
-            for caption in image_captions[i]:
-                factual_prompt = factual_prompt + f"  - {caption}\n"
-            reward_model_prompt_per_example = reward_model_prompt_per_example.format(
-                factual_prompt=factual_prompt
-            )
+        # if (
+        #     image_captions is not None
+        #     and r"{factual_prompt}" in reward_model_prompt_per_example
+        # ):
+        #     factual_prompt = FACTUAL_PROMPT
+        #     for caption in image_captions[i]:
+        #         factual_prompt = factual_prompt + f"  - {caption}\n"
+        #     reward_model_prompt_per_example = reward_model_prompt_per_example.format(
+        #         factual_prompt=factual_prompt
+        #     )
 
-        if reward_model_prompt_per_example is None:
-            conversations.append(conv.get_prompt())
-        else:
-            conversations.append(
-                conv.get_prompt() + reward_model_prompt_per_example + "</s>"
-            )
+        # if reward_model_prompt_per_example is None:
+        #     conversations.append(conv.get_prompt())
+        # else:
+        print(conv.get_prompt() + reward_model_prompt_per_example + "</s>")
+        conversations.append(
+            conv.get_prompt() + reward_model_prompt_per_example + "</s>"
+        )
     # Tokenize conversations
 
     if has_image:
@@ -425,7 +426,7 @@ def preprocess_v1(
         total_len = int(target.ne(tokenizer.pad_token_id).sum())
 
         rounds = conversation.split(conv.sep2)
-        cur_len = 1
+        cur_len = 1 + 1
         if mask_target:
             target[:cur_len] = IGNORE_INDEX
 
@@ -441,10 +442,10 @@ def preprocess_v1(
             parts[0] += sep
 
             if has_image:
-                round_len = len(tokenizer_image_token(rou, tokenizer))
+                round_len = len(tokenizer_image_token(rou, tokenizer)) - 2 + 1
                 instruction_len = len(tokenizer_image_token(parts[0], tokenizer)) - 2
             else:
-                round_len = len(tokenizer(rou).input_ids)
+                round_len = len(tokenizer(rou).input_ids) - 2 + 1
                 instruction_len = len(tokenizer(parts[0]).input_ids) - 2
 
             if mask_target:
