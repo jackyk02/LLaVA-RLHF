@@ -178,9 +178,13 @@ class BinaryRewardModelingDataset(Dataset):
         if isinstance(i, int):
             sources = [sources]
         assert len(sources) == 1, "Don't know why it is wrapped to a list"  # FIXME
+        # print("sources: " + str(sources))
         if "image" in sources[0]:
             image_file = self.list_data_dict[i]["image"]
             image_folder = self.data_args.image_folder
+            # print("image_file: " + str(image_file))
+            # print("image_folder: " + str(image_folder))
+
             processor = self.data_args.image_processor
             image = Image.open(os.path.join(image_folder, image_file)).convert("RGB")
             if self.data_args.image_aspect_ratio == "pad":
@@ -205,9 +209,11 @@ class BinaryRewardModelingDataset(Dataset):
                 image = expand2square(
                     image, tuple(int(x * 255) for x in processor.image_mean)
                 )
+                # image preprocessing for MLP projections
                 image = processor.preprocess(image, return_tensors="pt")[
                     "pixel_values"
                 ][0]
+                # print("image:", image)
             else:
                 image = processor.preprocess(image, return_tensors="pt")[
                     "pixel_values"
@@ -215,6 +221,7 @@ class BinaryRewardModelingDataset(Dataset):
             _sources = preprocess_multimodal(
                 copy.deepcopy([e["conversations"] for e in sources]), self.data_args
             )
+            print("_sources: " + str(sources))
         else:
             _sources = copy.deepcopy([e["conversations"] for e in sources])
 
@@ -248,6 +255,8 @@ class BinaryRewardModelingDataset(Dataset):
             # image does not exist in the data, but the model is multimodal
             crop_size = self.data_args.image_processor.crop_size
             data_dict["image"] = torch.zeros(3, crop_size["height"], crop_size["width"])
+
+        print("data_dict: ", data_dict)
 
         return data_dict
 

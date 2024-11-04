@@ -376,24 +376,23 @@ def preprocess_v1(
 
         reward_model_prompt_per_example = reward_model_prompt
 
-        # if (
-        #     image_captions is not None
-        #     and r"{factual_prompt}" in reward_model_prompt_per_example
-        # ):
-        #     factual_prompt = FACTUAL_PROMPT
-        #     for caption in image_captions[i]:
-        #         factual_prompt = factual_prompt + f"  - {caption}\n"
-        #     reward_model_prompt_per_example = reward_model_prompt_per_example.format(
-        #         factual_prompt=factual_prompt
-        #     )
+        if (
+            image_captions is not None
+            and r"{factual_prompt}" in reward_model_prompt_per_example
+        ):
+            factual_prompt = FACTUAL_PROMPT
+            for caption in image_captions[i]:
+                factual_prompt = factual_prompt + f"  - {caption}\n"
+            reward_model_prompt_per_example = reward_model_prompt_per_example.format(
+                factual_prompt=factual_prompt
+            )
 
-        # if reward_model_prompt_per_example is None:
-        #     conversations.append(conv.get_prompt())
-        # else:
-        print(conv.get_prompt() + reward_model_prompt_per_example + "</s>")
-        conversations.append(
-            conv.get_prompt() + reward_model_prompt_per_example + "</s>"
-        )
+        if reward_model_prompt_per_example is None:
+            conversations.append(conv.get_prompt())
+        else:
+            conversations.append(
+                conv.get_prompt() + reward_model_prompt_per_example + "</s>"
+            )
     # Tokenize conversations
 
     if has_image:

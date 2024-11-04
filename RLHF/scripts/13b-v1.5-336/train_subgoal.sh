@@ -18,7 +18,7 @@ LM_MODEL_NAME=LLaVA-RLHF-13b-v1.5-336/sft_model/
 PREFERENCE_DATA=output.json
 
 # SAVE CONFIG
-MODEL_NAME=LLaVA-Fact-RM-13b-v1.5-336-lora-padding-batch4-promptbetter
+MODEL_NAME=LLaVA-Fact-RM-13b-v1.5-336-lora-subgoal
 
 # WANDB CONFIG
 export WANDB_PROJECT="llava-rlhf"
@@ -44,6 +44,7 @@ torchrun \
     --gradient_accumulation_steps $GRAD_ACCUMULATION \
     --model_name_or_path $MODEL_DIR/$LM_MODEL_NAME \
     --image_folder $DATA_DIR/images \
+    --subgoal_folder $DATA_DIR/subgoals \
     --vision_tower $VISION_TOWER \
     --learning_rate $LEARNING_RATE \
     --mm_vision_select_layer -2 \
