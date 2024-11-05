@@ -12,14 +12,14 @@ export OMP_NUM_THREADS=8
 
 # MODEL CONFIG
 VISION_TOWER=openai/clip-vit-large-patch14-336
-LM_MODEL_NAME=LLaVA-RLHF-7b-v1.5-224/sft_model/
+LM_MODEL_NAME=LLaVA-RLHF-13b-v1.5-336/sft_model/
 
 # DATA CONFIG
 #PREFERENCE_DATA=output_discretized.json
 PREFERENCE_DATA=output.json
 
 # SAVE CONFIG
-MODEL_NAME=LLaVA-Fact-RM-7b-v1.5-224-lora-batch4-nopadding-continuous_actions
+MODEL_NAME=LLaVA-Fact-RM-13b-v1.5-336-lora-batch4-nopadding-continuous_actions-
 
 # WANDB CONFIG
 export WANDB_PROJECT="llava-rlhf"
@@ -27,9 +27,9 @@ export WANDB_NAME="$MODEL_NAME-$(date +%Y%m%d_%H%M%S)"
 export WANDB_ENTITY="skyrobo"  # Replace with your wandb username or organization
 
 # TRAINING CONFIG
-NUM_EPOCHS=1
+NUM_EPOCHS=50
 LEARNING_RATE=2e-5
-BATCH_SIZE=4
+BATCH_SIZE=16
 GRAD_ACCUMULATION=1
 
 torchrun \
@@ -58,7 +58,7 @@ torchrun \
     --eval_dataset_path $DATA_DIR/$PREFERENCE_DATA \
     --dataset_name "none" \
     --eval_dataset_name "none" \
-    --eval_size 100 \
+    --eval_size 500 \
     --bits 16 \
     --lora_r 64 \
     --lora_modules q_proj k_proj v_proj o_proj gate_proj up_proj down_proj \
@@ -68,7 +68,7 @@ torchrun \
     --evaluation_strategy "steps" \
     --eval_steps 50 \
     --save_strategy "steps" \
-    --save_steps 500 \
+    --save_steps 1000 \
     --save_total_limit 10 \
     --weight_decay 0.0 \
     --warmup_ratio 0.03 \
