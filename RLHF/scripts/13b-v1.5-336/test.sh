@@ -80,5 +80,5 @@ torchrun \
     --ddp_find_unused_parameters True \
     --resume_from_training True \
     --reward_prompt_file "./prompts/robot_reward_prompt.txt" \
-    --image_aspect_ratio 'pad' \
+    # --image_aspect_ratio 'pad' \
     --run_name "$WANDB_NAME"
