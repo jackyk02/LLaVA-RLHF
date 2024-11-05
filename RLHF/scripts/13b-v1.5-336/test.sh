@@ -12,13 +12,14 @@ export OMP_NUM_THREADS=8
 
 # MODEL CONFIG
 VISION_TOWER=openai/clip-vit-large-patch14-336
-LM_MODEL_NAME=LLaVA-RLHF-13b-v1.5-336/sft_model/
+LM_MODEL_NAME=LLaVA-RLHF-7b-v1.5-224/sft_model/
 
 # DATA CONFIG
+#PREFERENCE_DATA=output_discretized.json
 PREFERENCE_DATA=output.json
 
 # SAVE CONFIG
-MODEL_NAME=LLaVA-Fact-RM-13b-v1.5-336-lora-padding-batch4-promptbetter
+MODEL_NAME=LLaVA-Fact-RM-7b-v1.5-224-lora-batch4-nopadding-continuous_actions
 
 # WANDB CONFIG
 export WANDB_PROJECT="llava-rlhf"
@@ -57,7 +58,7 @@ torchrun \
     --eval_dataset_path $DATA_DIR/$PREFERENCE_DATA \
     --dataset_name "none" \
     --eval_dataset_name "none" \
-    --eval_size 500 \
+    --eval_size 100 \
     --bits 16 \
     --lora_r 64 \
     --lora_modules q_proj k_proj v_proj o_proj gate_proj up_proj down_proj \

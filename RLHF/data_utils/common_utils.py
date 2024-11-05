@@ -336,10 +336,10 @@ def preprocess_llama_2(
             if cur_len != total_len:
                 if mask_target:
                     target[:] = IGNORE_INDEX
-                print(
-                    f"WARNING: tokenization mismatch: {cur_len} vs. {total_len}."
-                    f" (ignored)"
-                )
+                # print(
+                    # f"WARNING: tokenization mismatch: {cur_len} vs. {total_len}."
+                    # f" (ignored)"
+                # )
 
     return dict(
         input_ids=input_ids,
@@ -390,7 +390,7 @@ def preprocess_v1(
         # if reward_model_prompt_per_example is None:
         #     conversations.append(conv.get_prompt())
         # else:
-        print(conv.get_prompt() + reward_model_prompt_per_example + "</s>")
+        # print(conv.get_prompt() + reward_model_prompt_per_example + "</s>")
         conversations.append(
             conv.get_prompt() + reward_model_prompt_per_example + "</s>"
         )
