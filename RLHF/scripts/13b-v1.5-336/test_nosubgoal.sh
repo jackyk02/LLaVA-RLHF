@@ -16,10 +16,10 @@ LM_MODEL_NAME=LLaVA-RLHF-13b-v1.5-336/sft_model/
 
 # DATA CONFIG
 #PREFERENCE_DATA=output_discretized.json
-PREFERENCE_DATA=output_nosubgoal.json
+PREFERENCE_DATA=nosubgoal_batch.json
 
 # SAVE CONFIG
-MODEL_NAME=LLaVA-Fact-RM-13b-v1.5-336-lora-batch4-nopadding-continuous_actions-nosubgoal
+MODEL_NAME=LLaVA-Fact-RM-13b-v1.5-336-lora-batch20-nopadding-continuous_actions-nosubgoal-same-input
 
 # WANDB CONFIG
 export WANDB_PROJECT="llava-rlhf-script"
@@ -27,9 +27,9 @@ export WANDB_NAME="$MODEL_NAME-$(date +%Y%m%d_%H%M%S)"
 export WANDB_ENTITY="skyrobo"  # Replace with your wandb username or organization
 
 # TRAINING CONFIG
-NUM_EPOCHS=1
+NUM_EPOCHS=10
 LEARNING_RATE=2e-5
-BATCH_SIZE=16
+BATCH_SIZE=20
 GRAD_ACCUMULATION=1
 
 torchrun \
@@ -66,9 +66,9 @@ torchrun \
     --num_train_epochs $NUM_EPOCHS \
     --group_by_length False \
     --evaluation_strategy "steps" \
-    --eval_steps 25 \
+    --eval_steps 20 \
     --save_strategy "steps" \
-    --save_steps 500 \
+    --save_steps 200 \
     --save_total_limit 10 \
     --weight_decay 0.0 \
     --warmup_ratio 0.03 \
