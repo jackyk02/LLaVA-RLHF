@@ -17,37 +17,40 @@ from models.reward_model import RewardModel
 
 DEFAULT_PAD_TOKEN = "[PAD]"
 
-def save_state_dict(output_state_dict: Dict, output_dir: str, filename: str = "model_weights.pkl") -> None:
-    """
-    Safely serialize and save a model state dictionary using pickle.
-    
-    Args:
-        output_state_dict: The model state dictionary to save
-        output_dir: Directory to save the file in
-        filename: Name of the output file (default: model_weights.pkl)
-    """
-    os.makedirs(output_dir, exist_ok=True)
-    output_path = os.path.join(output_dir, filename)
-    
-    # Convert tensors to CPU before saving
-    cpu_state_dict = {
-        key: value.cpu() if isinstance(value, torch.Tensor) else value 
-        for key, value in output_state_dict.items()
-    }
-    
-    # Use highest protocol for better performance
-    with open(output_path, 'wb') as f:
-        pickle.dump(cpu_state_dict, f, protocol=pickle.HIGHEST_PROTOCOL)
-    
-    print(f"Successfully saved state dict to {output_path}")
 
 class SavePeftModelCallback(transformers.TrainerCallback):
+    def save_state_dict(self, output_state_dict: Dict, output_dir: str, filename: str = "model_weights.pkl") -> None:
+        """
+        Safely serialize and save a model state dictionary using pickle.
+        
+        Args:
+            output_state_dict: The model state dictionary to save
+            output_dir: Directory to save the file in
+            filename: Name of the output file (default: model_weights.pkl)
+        """
+        os.makedirs(output_dir, exist_ok=True)
+        output_path = os.path.join(output_dir, filename)
+        
+        # Convert tensors to CPU before saving
+        cpu_state_dict = {
+            key: value.cpu() if isinstance(value, torch.Tensor) else value 
+            for key, value in output_state_dict.items()
+        }
+        
+        # Use highest protocol for better performance
+        with open(output_path, 'wb') as f:
+            pickle.dump(cpu_state_dict, f, protocol=pickle.HIGHEST_PROTOCOL)
+        
+        print(f"Successfully saved state dict to {output_path}")
+
     def save_model(self, args, state, kwargs):
         print("Saving PEFT checkpoint...")
 
         global_rank = int(os.environ.get("RANK", 0))
 
         if global_rank == 0:
+            print("Saving model checkpoint to %s" % args.output_dir)
+        
             #save adapter from ppo trainer:
             from peft.utils import WEIGHTS_NAME, get_peft_model_state_dict
             save_directory="/root/LLaVA-RLHF/save_dir"
@@ -73,7 +76,7 @@ class SavePeftModelCallback(transformers.TrainerCallback):
                 os.makedirs(output_dir, exist_ok=True)
 
                 # torch.save(output_state_dict, os.path.join(output_dir, WEIGHTS_NAME))
-                save_state_dict(output_state_dict, output_dir)
+                self.save_state_dict(output_state_dict, output_dir)
 
                 # save the config and change the inference mode to `True`
                 if peft_config.base_model_name_or_path is None:
@@ -85,8 +88,7 @@ class SavePeftModelCallback(transformers.TrainerCallback):
                 peft_config.save_pretrained(output_dir)
                 peft_config.inference_mode = inference_mode
 
-            # previous saving:
-            print("Saving model checkpoint to %s" % args.output_dir)
+            # prev
             if state.best_model_checkpoint is not None:
                 checkpoint_folder = state.best_model_checkpoint
             else:
