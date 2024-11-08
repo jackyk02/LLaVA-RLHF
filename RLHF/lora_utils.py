@@ -24,6 +24,40 @@ class SavePeftModelCallback(transformers.TrainerCallback):
         global_rank = int(os.environ.get("RANK", 0))
 
         if global_rank == 0:
+            #save adapter from ppo trainer:
+            from peft.utils import WEIGHTS_NAME, get_peft_model_state_dict
+            save_directory="/root/LLaVA-RLHF/save_dir"
+            os.makedirs(save_directory, exist_ok=True)
+            model = kwargs["model"].backbone_model
+
+            for adapter_name, peft_config in model.peft_config.items():
+                # save only the trainable weights
+                output_state_dict = get_peft_model_state_dict(
+                    model,
+                    state_dict=kwargs.get("state_dict", None),
+                    adapter_name=adapter_name,
+                )
+                print(output_state_dict)
+                output_dir = (
+                    os.path.join(save_directory, adapter_name)
+                    if adapter_name != "default"
+                    else save_directory
+                )
+                os.makedirs(output_dir, exist_ok=True)
+
+                torch.save(output_state_dict, os.path.join(output_dir, WEIGHTS_NAME))
+
+                # save the config and change the inference mode to `True`
+                if peft_config.base_model_name_or_path is None:
+                    peft_config.base_model_name_or_path = (
+                        model.base_model.model.__dict__.get("name_or_path", None)
+                    )
+                inference_mode = peft_config.inference_mode
+                peft_config.inference_mode = True
+                peft_config.save_pretrained(output_dir)
+                peft_config.inference_mode = inference_mode
+
+            # previous saving:
             print("Saving model checkpoint to %s" % args.output_dir)
             if state.best_model_checkpoint is not None:
                 checkpoint_folder = state.best_model_checkpoint
