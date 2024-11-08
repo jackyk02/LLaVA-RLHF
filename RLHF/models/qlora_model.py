@@ -146,13 +146,13 @@ def get_accelerate_model(
     model.config.torch_dtype = (
         torch.float32 if args.fp16 else (torch.bfloat16 if args.bf16 else torch.float32)
     )
-
+    print(args.gradient_checkpointing)
     if not args.full_finetune:
         model = prepare_model_for_kbit_training(
-            model, use_gradient_checkpointing=args.gradient_checkpointing
+            model, use_gradient_checkpointing=False
         )
-    if args.gradient_checkpointing:
-        model.gradient_checkpointing_enable()
+    # if args.gradient_checkpointing:
+    #     model.gradient_checkpointing_enable()
 
     if not args.full_finetune:
         if checkpoint_dir is not None:

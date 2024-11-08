@@ -11,11 +11,35 @@ from typing import Optional, Dict, Sequence, List
 import torch
 import transformers
 from transformers.trainer_utils import PREFIX_CHECKPOINT_DIR
+import pickle
 
 from models.reward_model import RewardModel
 
 DEFAULT_PAD_TOKEN = "[PAD]"
 
+def save_state_dict(output_state_dict: Dict, output_dir: str, filename: str = "model_weights.pkl") -> None:
+    """
+    Safely serialize and save a model state dictionary using pickle.
+    
+    Args:
+        output_state_dict: The model state dictionary to save
+        output_dir: Directory to save the file in
+        filename: Name of the output file (default: model_weights.pkl)
+    """
+    os.makedirs(output_dir, exist_ok=True)
+    output_path = os.path.join(output_dir, filename)
+    
+    # Convert tensors to CPU before saving
+    cpu_state_dict = {
+        key: value.cpu() if isinstance(value, torch.Tensor) else value 
+        for key, value in output_state_dict.items()
+    }
+    
+    # Use highest protocol for better performance
+    with open(output_path, 'wb') as f:
+        pickle.dump(cpu_state_dict, f, protocol=pickle.HIGHEST_PROTOCOL)
+    
+    print(f"Successfully saved state dict to {output_path}")
 
 class SavePeftModelCallback(transformers.TrainerCallback):
     def save_model(self, args, state, kwargs):
@@ -27,6 +51,9 @@ class SavePeftModelCallback(transformers.TrainerCallback):
             #save adapter from ppo trainer:
             from peft.utils import WEIGHTS_NAME, get_peft_model_state_dict
             save_directory="/root/LLaVA-RLHF/save_dir"
+            save_directory = os.path.join(
+                save_directory, f"{PREFIX_CHECKPOINT_DIR}-{state.global_step}"
+            )
             os.makedirs(save_directory, exist_ok=True)
             model = kwargs["model"].backbone_model
 
@@ -45,7 +72,8 @@ class SavePeftModelCallback(transformers.TrainerCallback):
                 )
                 os.makedirs(output_dir, exist_ok=True)
 
-                torch.save(output_state_dict, os.path.join(output_dir, WEIGHTS_NAME))
+                # torch.save(output_state_dict, os.path.join(output_dir, WEIGHTS_NAME))
+                save_state_dict(output_state_dict, output_dir)
 
                 # save the config and change the inference mode to `True`
                 if peft_config.base_model_name_or_path is None:

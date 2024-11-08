@@ -162,6 +162,18 @@ class RewardModel(transformers.PreTrainedModel):
             tokenizer=tokenizer,
             **kwargs,
         )
+            # testing for printing out backbone
+        from peft.utils import WEIGHTS_NAME, get_peft_model_state_dict
+        for adapter_name, peft_config in self.backbone_model.peft_config.items():
+            # save only the trainable weights
+            output_state_dict = get_peft_model_state_dict(
+                self.backbone_model,
+                state_dict=None,
+                adapter_name=adapter_name,
+            )
+            print("first: ", output_state_dict)
+
+
         hidden_size = get_transformer_hidden_size(self.backbone_model)
         reward_head = nn.Linear(hidden_size, 1)
         torch.nn.init.zeros_(reward_head.bias)

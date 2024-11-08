@@ -202,7 +202,7 @@ class TrainingArguments(transformers.Seq2SeqTrainingArguments):
         },
     )
     gradient_checkpointing: bool = field(
-        default=True,
+        default=False,
         metadata={"help": "Use gradient checkpointing. You want to use this."},
     )
     do_train: bool = field(
@@ -373,6 +373,16 @@ def train():
     print_trainable_parameters(args, model)
     print("loaded model")
     set_seed(args.seed)
+    # testing for printing out backbone
+    # from peft.utils import WEIGHTS_NAME, get_peft_model_state_dict
+    # for adapter_name, peft_config in model.backbone_model.peft_config.items():
+    #     # save only the trainable weights
+    #     output_state_dict = get_peft_model_state_dict(
+    #         model.backbone_model,
+    #         state_dict=None,
+    #         adapter_name=adapter_name,
+    #     )
+    #     print("first: ", output_state_dict)
 
     trainer = Trainer(
         model=model,
