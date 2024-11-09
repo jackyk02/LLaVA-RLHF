@@ -22,7 +22,7 @@ PREFERENCE_DATA=10k.json
 MODEL_NAME=LLaVA-Fact-RM-13b-v1.5-336-lora-batch20-nopadding-continuous_actions-nosubgoal-10k
 
 # WANDB CONFIG
-export WANDB_PROJECT="llava-rlhf-fixed"
+export WANDB_PROJECT="llava-rlhf-script"
 export WANDB_NAME="$MODEL_NAME-$(date +%Y%m%d_%H%M%S)"
 export WANDB_ENTITY="skyrobo"  # Replace with your wandb username or organization
 
@@ -68,7 +68,7 @@ torchrun \
     --evaluation_strategy "steps" \
     --eval_steps 100 \
     --save_strategy "steps" \
-    --save_steps 200 \
+    --save_steps 3 \
     --save_total_limit 10 \
     --weight_decay 0.0 \
     --warmup_ratio 0.03 \
