@@ -14,9 +14,9 @@ index 0a891f0..b12f1a8 100644
 +    BitsAndBytesConfig,
 +)
  import torch
- from llava.model import *
--from llava.constants import DEFAULT_IMAGE_PATCH_TOKEN, DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN
-+from llava.constants import (
+ from moellava.model import *
+-from moellava.constants import DEFAULT_IMAGE_PATCH_TOKEN, DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN
++from moellava.constants import (
 +    DEFAULT_IMAGE_PATCH_TOKEN,
 +    DEFAULT_IM_START_TOKEN,
 +    DEFAULT_IM_END_TOKEN,
@@ -1560,8 +1560,8 @@ index 656c6f9..8182302 100644
  
  from .multimodal_encoder.builder import build_vision_tower
  
--from llava.constants import IGNORE_INDEX, IMAGE_TOKEN_INDEX, DEFAULT_IMAGE_PATCH_TOKEN, DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN
-+from llava.constants import (
+-from moellava.constants import IGNORE_INDEX, IMAGE_TOKEN_INDEX, DEFAULT_IMAGE_PATCH_TOKEN, DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN
++from moellava.constants import (
 +    IGNORE_INDEX,
 +    IMAGE_TOKEN_INDEX,
 +    DEFAULT_IMAGE_PATCH_TOKEN,

@@ -33,7 +33,7 @@ import transformers
 
 from peft.utils import WEIGHTS_NAME, get_peft_model_state_dict
 
-from llava.constants import (
+from moellava.constants import (
     IGNORE_INDEX,
     IMAGE_TOKEN_INDEX,
     DEFAULT_IMAGE_TOKEN,

@@ -4,12 +4,12 @@ import torch
 import os
 import sys
 import json
-from llava.conversation import conv_templates, SeparatorStyle
-from llava.utils import disable_torch_init
+from moellava.conversation import conv_templates, SeparatorStyle
+from moellava.utils import disable_torch_init
 from transformers import CLIPVisionModel, CLIPImageProcessor, StoppingCriteria
-from llava.model import *
-from llava.model.utils import KeywordsStoppingCriteria
-from llava.utils import disable_torch_init
+from moellava.model import *
+from moellava.model.utils import KeywordsStoppingCriteria
+from moellava.utils import disable_torch_init
 from PIL import Image
 
 import os

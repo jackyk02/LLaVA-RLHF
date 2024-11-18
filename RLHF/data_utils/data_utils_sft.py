@@ -26,7 +26,7 @@ from datasets import load_dataset
 from datasets import Dataset as HFDataset
 from torch.utils.data import Dataset
 
-from llava.constants import IGNORE_INDEX
+from moellava.constants import IGNORE_INDEX
 
 from data_utils.common_utils import preprocess, preprocess_multimodal
 

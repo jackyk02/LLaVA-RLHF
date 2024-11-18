@@ -45,7 +45,7 @@ import data_utils.common_utils as utils
 import models.distributed_utils as distributed_utils
 from models.trainer_utils import create_optimizer, create_scheduler
 
-from llava.constants import (
+from moellava.constants import (
     IGNORE_INDEX,
     IMAGE_TOKEN_INDEX,
     DEFAULT_IMAGE_TOKEN,

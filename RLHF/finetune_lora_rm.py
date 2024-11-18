@@ -29,10 +29,10 @@ from models.reward_model import (
     compute_reward_modeling_metrics,
 )
 
-from llava import conversation as conversation_lib
-from llava.model import *
-from llava.mm_utils import tokenizer_image_token
-from llava.constants import (
+from moellava import conversation as conversation_lib
+from moellava.model import *
+from moellava.mm_utils import tokenizer_image_token
+from moellava.constants import (
     IGNORE_INDEX,
     IMAGE_TOKEN_INDEX,
     DEFAULT_IMAGE_TOKEN,
@@ -40,7 +40,7 @@ from llava.constants import (
     DEFAULT_IM_END_TOKEN,
 )
 
-from llava.train.train import smart_tokenizer_and_embedding_resize
+from moellava.train.train import smart_tokenizer_and_embedding_resize
 from data_utils.common_utils import preprocess
 
 torch.backends.cuda.matmul.allow_tf32 = True
@@ -65,7 +65,7 @@ class ModelArguments:
             "help": "Enable unpickling of arbitrary code in AutoModelForCausalLM#from_pretrained."
         },
     )
-    # from LLaVA
+    # from moellava
     version: Optional[str] = field(default="v1")
     freeze_backbone: bool = field(default=False)
     tune_mm_mlp_adapter: bool = field(default=False)
@@ -91,7 +91,7 @@ class DataArguments:
             "help": "Number of examples to split out from training to use for evaluation."
         },
     )
-    # From LLaVA
+    # from moellava
     lazy_preprocess: bool = False
     is_multimodal: bool = False
     image_folder: Optional[str] = field(default=None)
@@ -104,7 +104,7 @@ class DataArguments:
 @dataclass
 class TrainingArguments(transformers.Seq2SeqTrainingArguments):
     cache_dir: Optional[str] = field(default=None)
-    # From LLaVA
+    # from moellava
     remove_unused_columns: bool = field(default=False)
     freeze_mm_mlp_adapter: bool = field(default=False)
     # From AlpacaFarm
@@ -284,7 +284,7 @@ def train():
 
     # Tokenizer
     tokenizer = TokenizerClass.from_pretrained(
-        tokenizer_model_name,
+        "stabilityai/stablelm-2-1_6b",
         cache_dir=args.cache_dir,
         model_max_length=training_args.model_max_length,
         padding_side="left",
@@ -313,15 +313,14 @@ def train():
             ]
 
     if model_args.vision_tower is not None:
-        from llava.model import LlavaLlamaForCausalLM
 
         with DisableLogger():
-            model = LlavaLlamaForCausalLM.from_pretrained(
+            model = MoELLaVALlamaForCausalLM.from_pretrained(
                 model_args.model_name_or_path,
                 cache_dir=training_args.cache_dir,
             )
-
-        vision_tower = model.get_vision_tower()
+        # print(model)
+        vision_tower = model.get_image_tower()
         if not vision_tower.is_loaded:
             vision_tower.load_model()
 

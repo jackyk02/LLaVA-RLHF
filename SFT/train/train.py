@@ -28,13 +28,13 @@ import torch
 import transformers
 
 from torch.utils.data import Dataset
-from llava_trainer import LLaVATrainer
-from llava.model import *
+from moellava_trainer import LLaVATrainer
+from moellava.model import *
 
-from llava.constants import IGNORE_INDEX, IMAGE_TOKEN_INDEX, DEFAULT_IMAGE_TOKEN, DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN
+from moellava.constants import IGNORE_INDEX, IMAGE_TOKEN_INDEX, DEFAULT_IMAGE_TOKEN, DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN
 
 import llava.conversation as conversation_lib
-from llava.mm_utils import tokenizer_image_token
+from moellava.mm_utils import tokenizer_image_token
 
 from PIL import Image
 from base64 import b64decode

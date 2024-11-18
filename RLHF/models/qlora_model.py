@@ -27,7 +27,7 @@ from peft import (
     PeftModelForCausalLM,
 )
 from peft.tuners.lora import LoraLayer
-from llava.model import LlavaLlamaForCausalLM
+from moellava.model import LlavaLlamaForCausalLM
 
 REGISTERED_BASE_MODELS = {}
 
@@ -196,7 +196,7 @@ def get_accelerate_model(
         model.config.image_aspect_ratio = args.image_aspect_ratio
         model.config.image_grid_pinpoints = args.image_grid_pinpoints
 
-        vision_tower = model.get_vision_tower()
+        vision_tower = model.get_image_tower()
         if not vision_tower.is_loaded:
             vision_tower.load_model()
         vision_tower.to(device="cuda", dtype=torch.bfloat16)

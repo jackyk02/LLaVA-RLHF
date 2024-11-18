@@ -31,7 +31,7 @@ from peft import PeftModel, LoraModel, LoraConfig
 
 from models.qlora_model import get_accelerate_model
 
-from llava.model import *
+from moellava.model import *
 
 
 def unpack_dict(

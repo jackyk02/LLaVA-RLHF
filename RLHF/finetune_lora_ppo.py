@@ -41,9 +41,9 @@ from models.ppo_trainer import (
 from models.rl_trainer import AlpacaAccelerator
 
 
-from llava import conversation as conversation_lib
-from llava.model import *
-from llava.constants import (
+from moellava import conversation as conversation_lib
+from moellava.model import *
+from moellava.constants import (
     IGNORE_INDEX,
     IMAGE_TOKEN_INDEX,
     DEFAULT_IMAGE_TOKEN,
@@ -76,7 +76,7 @@ class ModelArguments:
     )
     base_model_name: Optional[str] = field(default="EleutherAI/pythia-12b")
     reward_base_model_name: Optional[str] = field(default=None)
-    # from LLaVA
+    # from moellava
     version: Optional[str] = field(default="v1")
     freeze_backbone: bool = field(default=False)
     tune_mm_mlp_adapter: bool = field(default=False)
@@ -100,7 +100,7 @@ class DataArguments:
         default=None,
         metadata={"help": "Token to stop generation with."},
     )
-    # From LLaVA
+    # from moellava
     lazy_preprocess: bool = False
     is_multimodal: bool = False
     image_folder: Optional[str] = field(default=None)
@@ -479,7 +479,7 @@ def train():
         ]
 
     if model_args.vision_tower is not None:
-        from llava.model import LlavaLlamaForCausalLM
+        from moellava.model import LlavaLlamaForCausalLM
 
         with DisableLogger():
             base_model = LlavaLlamaForCausalLM.from_pretrained(

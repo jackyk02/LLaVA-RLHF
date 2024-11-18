@@ -39,10 +39,10 @@ from data_utils.data_utils_sft import (
 )
 from models.qlora_model import get_accelerate_model
 
-from llava import conversation as conversation_lib
-from llava.model import *
-from llava.mm_utils import tokenizer_image_token
-from llava.constants import (
+from moellava import conversation as conversation_lib
+from moellava.model import *
+from moellava.mm_utils import tokenizer_image_token
+from moellava.constants import (
     IGNORE_INDEX,
     IMAGE_TOKEN_INDEX,
     DEFAULT_IMAGE_TOKEN,
@@ -50,7 +50,7 @@ from llava.constants import (
     DEFAULT_IM_END_TOKEN,
 )
 
-from llava.train.train import smart_tokenizer_and_embedding_resize
+from moellava.train.train import smart_tokenizer_and_embedding_resize
 from data_utils.common_utils import preprocess
 
 torch.backends.cuda.matmul.allow_tf32 = True
@@ -67,7 +67,7 @@ class ModelArguments:
             "help": "Enable unpickling of arbitrary code in AutoModelForCausalLM#from_pretrained."
         },
     )
-    # from LLaVA
+    # from moellava
     version: Optional[str] = field(default="v1")
     freeze_backbone: bool = field(default=False)
     tune_mm_mlp_adapter: bool = field(default=False)
@@ -123,7 +123,7 @@ class DataArguments:
             "help": "Which dataset format is used. [alpaca|chip2|self-instruct|hh-rlhf]"
         },
     )
-    # From LLaVA
+    # from moellava
     lazy_preprocess: bool = False
     is_multimodal: bool = False
     image_folder: Optional[str] = field(default=None)
@@ -422,7 +422,7 @@ def train():
             ]
 
     if model_args.vision_tower is not None:
-        from llava.model import LlavaLlamaForCausalLM
+        from moellava.model import LlavaLlamaForCausalLM
 
         model = LlavaLlamaForCausalLM.from_pretrained(
             model_args.model_name_or_path,
