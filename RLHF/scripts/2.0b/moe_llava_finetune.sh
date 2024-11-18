@@ -16,7 +16,7 @@ LM_MODEL_NAME=MoE-LLaVA-StableLM-1.6B-4e/
 
 # DATA CONFIG
 #PREFERENCE_DATA=output_discretized.json
-PREFERENCE_DATA=batch16_vla.json
+PREFERENCE_DATA=batch16_vla_moe.json
 
 # SAVE CONFIG
 MODEL_NAME=LLaVA-Fact-RM-13b-v1.5-336-lora-batch16-discretized_actions-moe
