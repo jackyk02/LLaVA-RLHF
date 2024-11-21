@@ -3,12 +3,12 @@
 set -e
 set -x
 
-export CUDA_VISIBLE_DEVICES=0,1,2,3
+export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 export DATA_DIR="/root/LLaVA-RLHF/data_dir"
 export MODEL_DIR="/root/LLaVA-RLHF/model_dir"
 export PYTHONPATH="$PWD:$PYTHONPATH"
-export GPUS_PER_NODE=4
-export OMP_NUM_THREADS=4
+export GPUS_PER_NODE=8
+export OMP_NUM_THREADS=8
 
 # MODEL CONFIG
 VISION_TOWER=openai/clip-vit-large-patch14-336
@@ -16,7 +16,7 @@ LM_MODEL_NAME=MoE-LLaVA-StableLM-1.6B-4e/
 
 # DATA CONFIG
 #PREFERENCE_DATA=output_discretized.json
-PREFERENCE_DATA=batch16_vla_moe.json
+PREFERENCE_DATA=vla_moe_truth.json
 
 # SAVE CONFIG
 MODEL_NAME=LLaVA-Fact-RM-13b-v1.5-336-lora-batch16-discretized_actions-moe
@@ -29,7 +29,7 @@ export WANDB_ENTITY="skyrobo"  # Replace with your wandb username or organizatio
 # TRAINING CONFIG
 NUM_EPOCHS=20
 LEARNING_RATE=2e-5
-BATCH_SIZE=32
+BATCH_SIZE=16
 GRAD_ACCUMULATION=1
 
 torchrun \
