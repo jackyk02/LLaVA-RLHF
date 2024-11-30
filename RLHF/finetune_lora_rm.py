@@ -284,7 +284,7 @@ def train():
 
     # Tokenizer
     tokenizer = TokenizerClass.from_pretrained(
-        tokenizer_model_name,
+        "Qwen/Qwen2-0.5B",
         cache_dir=args.cache_dir,
         model_max_length=training_args.model_max_length,
         padding_side="left",
@@ -316,7 +316,7 @@ def train():
         from llava.model import LlavaLlamaForCausalLM
 
         with DisableLogger():
-            model = LlavaLlamaForCausalLM.from_pretrained(
+            model = LlavaQwenForCausalLM.from_pretrained(
                 model_args.model_name_or_path,
                 cache_dir=training_args.cache_dir,
             )
@@ -338,11 +338,18 @@ def train():
         training_args=training_args,
     )
 
+    smart_tokenizer_and_embedding_resize(
+        special_tokens_dict=dict(pad_token="[PAD]"),
+        tokenizer=tokenizer,
+        model=model,
+    )
+
     if args.do_train:
         training_data = data_module["train_dataset"]
         rank0_print("Training data size:", len(training_data))
         rank0_print("Training data example:")
         for i in range(min(3, len(training_data))):
+            rank0_print("hello: ", training_data)
             ex_input_ids_0 = training_data[i]["input_ids"][0]
             ex_input_ids_0[ex_input_ids_0 == IMAGE_TOKEN_INDEX] = tokenizer.eos_token_id
             rank0_print(tokenizer.decode(ex_input_ids_0, skip_special_tokens=False))
