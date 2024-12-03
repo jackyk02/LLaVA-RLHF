@@ -16,20 +16,20 @@ LM_MODEL_NAME=MoE-LLaVA-StableLM-1.6B-4e/
 
 # DATA CONFIG
 #PREFERENCE_DATA=output_discretized.json
-PREFERENCE_DATA=vla_moe_truth.json
+PREFERENCE_DATA=k_means_data_octo.json
 
 # SAVE CONFIG
-MODEL_NAME=LLaVA-Fact-RM-13b-v1.5-336-lora-batch16-discretized_actions-moe
+MODEL_NAME=LLaVA-Fact-RM-13b-v1.5-336-lora-batch16-discretized_actions-moe-octo
 
 # WANDB CONFIG
-export WANDB_PROJECT="llava-rm-moe"
+export WANDB_PROJECT="llava-octo-moe"
 export WANDB_NAME="$MODEL_NAME-$(date +%Y%m%d_%H%M%S)"
 export WANDB_ENTITY="skyrobo"  # Replace with your wandb username or organization
 
 # TRAINING CONFIG
 NUM_EPOCHS=20
 LEARNING_RATE=2e-5
-BATCH_SIZE=16
+BATCH_SIZE=32
 GRAD_ACCUMULATION=1
 
 torchrun \
