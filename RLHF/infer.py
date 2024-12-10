@@ -338,7 +338,7 @@ def train():
             args=args,
             config=config,
             qlora=True,
-            checkpoint_dir=checkpoint_dir,
+            checkpoint_dir="/root/LLaVA-RLHF/model_dir/checkpoint-2800",
             tokenizer=tokenizer,
         )
 
