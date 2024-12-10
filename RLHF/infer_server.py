@@ -249,231 +249,225 @@ def rank0_print(*args):
         print(*args)
 
 
-def train():
-    hfparser = transformers.HfArgumentParser(
-        (ModelArguments, DataArguments, TrainingArguments)
-    )
-    (
-        model_args,
-        data_args,
-        training_args,
-        extra_args,
-    ) = hfparser.parse_args_into_dataclasses(return_remaining_strings=True)
-    args = argparse.Namespace(
-        **vars(model_args), **vars(data_args), **vars(training_args)
-    )
 
-    if args.resume_dir is not None:
-        checkpoint_dir, completed_training = args.resume_dir, False
-    else:
-        checkpoint_dir, completed_training = get_last_checkpoint(args.output_dir)
-
-    if completed_training:
-        rank0_print("Detected that training was already completed!")
-
-    if checkpoint_dir is None:
-        rank0_print("Training from scratch.")
-    else:
-        rank0_print("Loading from checkpoint:", checkpoint_dir)
-        if args.resume_from_training:
-            rank0_print("Resuming from training not supported yet. Exiting.")
-            exit(1)
-
-    tokenizer_model_name = args.model_name_or_path
-    TokenizerClass = AutoTokenizer
-
-    # Tokenizer
-    tokenizer = TokenizerClass.from_pretrained(
-        "stabilityai/stablelm-2-1_6b",
-        cache_dir=args.cache_dir,
-        model_max_length=training_args.model_max_length,
-        padding_side="left",
-        truncation_side="right",
-        use_fast=False,
-    )
-
-    if model_args.version == "v0":
-        if tokenizer.pad_token is None:
-            smart_tokenizer_and_embedding_resize(
-                special_tokens_dict=dict(pad_token="[PAD]"),
-                tokenizer=tokenizer,
-                model=model,
-            )
-    elif model_args.version == "v0.5":
-        tokenizer.pad_token = tokenizer.unk_token
-    else:
-        tokenizer.pad_token = tokenizer.unk_token
-        if model_args.version in conversation_lib.conv_templates:
-            conversation_lib.default_conversation = conversation_lib.conv_templates[
-                model_args.version
-            ]
-        else:
-            conversation_lib.default_conversation = conversation_lib.conv_templates[
-                "vicuna_v1"
-            ]
-
-    if model_args.vision_tower is not None:
-
-        with DisableLogger():
-            model = MoELLaVALlamaForCausalLM.from_pretrained(
-                model_args.model_name_or_path,
-                cache_dir=training_args.cache_dir,
-            )
-        # print(model)
-        vision_tower = model.get_image_tower()
-        if not vision_tower.is_loaded:
-            vision_tower.load_model()
-
-        data_args.image_processor = vision_tower.image_processor
-        data_args.is_multimodal = True
-        model.config.mm_use_im_start_end = (
-            data_args.mm_use_im_start_end
-        ) = model_args.mm_use_im_start_end
-        training_args.use_im_start_end = model_args.mm_use_im_start_end
-
-    config = RewardConfig(backbone_model_name_or_path=model_args.model_name_or_path)
-
-    with DisableLogger():
-        model = RewardModel(
-            args=args,
-            config=config,
-            qlora=True,
-            checkpoint_dir="/root/LLaVA-RLHF/model_dir/checkpoint-4800",
-            tokenizer=tokenizer,
+class RobotRewardModel:
+    def __init__(self):
+        hfparser = transformers.HfArgumentParser(
+            (ModelArguments, DataArguments, TrainingArguments)
+        )
+        (
+            model_args,
+            data_args,
+            training_args,
+            extra_args,
+        ) = hfparser.parse_args_into_dataclasses(return_remaining_strings=True)
+        args = argparse.Namespace(
+            **vars(model_args), **vars(data_args), **vars(training_args)
         )
 
-    model.backbone_model.config.use_cache = False
-    print_trainable_parameters(args, model)
-    print("loaded model")
-    # print(model)
-    set_seed(args.seed)
-    
-    #input id works -----------------------------------------------------------
-    from action_processing import ActionTokenizer
-    action_tokenizer = ActionTokenizer(tokenizer)
+        tokenizer_model_name = args.model_name_or_path
+        TokenizerClass = AutoTokenizer
+
+        # Tokenizer
+        tokenizer = TokenizerClass.from_pretrained(
+            "stabilityai/stablelm-2-1_6b",
+            cache_dir=args.cache_dir,
+            model_max_length=training_args.model_max_length,
+            padding_side="left",
+            truncation_side="right",
+            use_fast=False,
+        )
+
+        if model_args.version == "v0":
+            if tokenizer.pad_token is None:
+                smart_tokenizer_and_embedding_resize(
+                    special_tokens_dict=dict(pad_token="[PAD]"),
+                    tokenizer=tokenizer,
+                    model=model,
+                )
+        elif model_args.version == "v0.5":
+            tokenizer.pad_token = tokenizer.unk_token
+        else:
+            tokenizer.pad_token = tokenizer.unk_token
+            if model_args.version in conversation_lib.conv_templates:
+                conversation_lib.default_conversation = conversation_lib.conv_templates[
+                    model_args.version
+                ]
+            else:
+                conversation_lib.default_conversation = conversation_lib.conv_templates[
+                    "vicuna_v1"
+                ]
+
+        if model_args.vision_tower is not None:
+
+            with DisableLogger():
+                model = MoELLaVALlamaForCausalLM.from_pretrained(
+                    model_args.model_name_or_path,
+                    cache_dir=training_args.cache_dir,
+                )
+            # print(model)
+            vision_tower = model.get_image_tower()
+            if not vision_tower.is_loaded:
+                vision_tower.load_model()
+
+            data_args.image_processor = vision_tower.image_processor
+            data_args.is_multimodal = True
+            model.config.mm_use_im_start_end = (
+                data_args.mm_use_im_start_end
+            ) = model_args.mm_use_im_start_end
+            training_args.use_im_start_end = model_args.mm_use_im_start_end
+
+        config = RewardConfig(backbone_model_name_or_path=model_args.model_name_or_path)
+
+        with DisableLogger():
+            model = RewardModel(
+                args=args,
+                config=config,
+                qlora=True,
+                checkpoint_dir="/root/LLaVA-RLHF/model_dir/checkpoint-4800",
+                tokenizer=tokenizer,
+            )
+
+        model.backbone_model.config.use_cache = False
+        print_trainable_parameters(args, model)
+        print("loaded model")
+        # print(model)
+        set_seed(args.seed)
+        self.tokenizer = tokenizer
+        self.model = model
+        self.data_args = data_args
+
+
+    def get_reward(self, batch_size, instruction, image_path, actions):
+        #input id works -----------------------------------------------------------
+        from action_processing import ActionTokenizer
+        action_tokenizer = ActionTokenizer(self.tokenizer)
+        from moellava.conversation import conv_templates, SeparatorStyle
+        conv_mode = "vicuna_v1"
+        conv_template = conv_templates[conv_mode].copy()
+
+        action_in_ids= []
+        for action in actions:
+            # Prepare conversation
+            action_str = action_tokenizer(action)
+            inp = (f"shows the current observation from the robot's wrist-mounted camera. "
+                    f"The robot manipulation arm is attempting to {instruction}. "
+                    f"What action should the robot take to effectively accomplish the task? "
+                    f"ASSISTANT: The robot should take the action: {action_str} "
+                    f"USER: Please evaluate the quality of the robot action. "
+                    f"A good robot action should consider different factors, "
+                    f"especially interactions with surrounding objects and human preferences.\n"
+                    f"ASSISTANT: Based on how humans would control the robot arm and the "
+                    f"awareness of the situation, the quality score of the robot action is</s")
+
+            inp = DEFAULT_IMAGE_TOKEN + '\n' + inp
+
+            conv = conv_template.copy()
+            conv.append_message(conv.roles[0], inp)
+            prompt = conv.get_prompt()
+            prompt = prompt.replace("<image>", "<|endoftext|>")
+            in_ids = self.tokenizer(prompt).input_ids
+            in_ids.pop()
+            in_ids[25]=-200
+            action_in_ids.append(in_ids)
+
+        ex_input_ids = torch.tensor(action_in_ids, dtype=torch.long)
+        from typing import Sequence
+        import einops
+        def pad_sequence_from_left(
+            sequences: Sequence[torch.Tensor],
+            batch_first: bool = False,
+            padding_value: float = 0.0,
+        ):
+            """Mirror of `torch.nn.utils.rnn.pad_sequence`, but pad from left."""
+            sequences = tuple(sequence.flip(0) for sequence in sequences)
+            padded_sequence = torch._C._nn.pad_sequence(
+                sequences, batch_first, padding_value
+            )  # noqa
+            padded_sequence = padded_sequence.flip(int(batch_first))
+            return padded_sequence
+
+        def _left_pad_helper(ex_input_ids, batch_size):
+            # TODO(lxuechen): Potentially replace with `transformers.PretrainedTokenizerBase.prepare_for_model`.
+            # `instances` is a list of dicts, each dict has key whose value is a list of tensors, possibly of unequal length.
+            # input_ids = [seq for instance in instances for seq in instance[key]]  # Flatten.
+            input_ids = [seq for seq in ex_input_ids]
+            input_ids = pad_sequence_from_left(
+                input_ids,
+                batch_first=True,
+                padding_value=self.tokenizer.pad_token_id,
+            )
+            input_ids = einops.rearrange(
+                input_ids,
+                "(bsz num_candidates) max_seq_len -> bsz num_candidates max_seq_len",
+                num_candidates=batch_size,
+            )
+            return input_ids
+        input_ids = _left_pad_helper(ex_input_ids, batch_size).squeeze(0)
+        attention_mask = input_ids.ne(self.tokenizer.pad_token_id).long()
+
+        # print("input_ids: ", input_ids.shape)
+        # print("attn_mask: ", attention_mask.shape)
+        #input id works -----------------------------------------------------------
+
+        #image loading works
+        from PIL import Image
+        processor = self.data_args.image_processor
+        image = Image.open(image_path).convert("RGB")
+        if self.data_args.image_aspect_ratio == "pad":
+            def expand2square(pil_img, background_color):
+                width, height = pil_img.size
+                if width == height:
+                    return pil_img
+                elif width > height:
+                    result = Image.new(
+                        pil_img.mode, (width, width), background_color
+                    )
+                    result.paste(pil_img, (0, (width - height) // 2))
+                    return result
+                else:
+                    result = Image.new(
+                        pil_img.mode, (height, height), background_color
+                    )
+                    result.paste(pil_img, ((height - width) // 2, 0))
+                    return result
+            def resize_to_256(pil_img):
+                width, height = pil_img.size
+                if width == 256 and height == 256:
+                    return pil_img
+                else:
+                    return pil_img.resize((256, 256), Image.Resampling.LANCZOS)
+
+            image = resize_to_256(image)
+            image = expand2square(
+                image, tuple(int(x * 255) for x in processor.image_mean)
+            )
+            image = processor.preprocess(image, return_tensors="pt")[
+                "pixel_values"
+            ][0]
+
+        images = image.unsqueeze(0).repeat(batch_size, 1, 1, 1)
+
+        model_inputs = {
+            "input_ids": input_ids.cuda(0).to(torch.int64),
+            "attention_mask": attention_mask.cuda(0).to(torch.int64),
+            "images": images.cuda(0).to(torch.bfloat16)
+        }
+        score = self.model.forward(**model_inputs)
+        return score
+
+if __name__ == "__main__":
+    rm = RobotRewardModel()
+
+    batch_size = 2
+    instruction = "move the yellow knife to the right of the pan"
+    image_path = "images/robot.jpg"
     actions = [
         [-0.0006071124225854874, -0.001102231559343636, -0.002975916489958763, -0.0037233866751194, 0.009374408982694149, 0.00042649864917621017, 1.003713607788086], #action0
         [0.0007309613865800202, -0.00033146265195682645, 8.855393389239907e-05, 0.0023672617971897125, -0.00297730159945786, 0.0071182833053171635, 1.0025840997695923]
     ]
-    instruction = "place utensil in between towel and pot"
-    from moellava.conversation import conv_templates, SeparatorStyle
-    conv_mode = "vicuna_v1"
-    conv_template = conv_templates[conv_mode].copy()
 
-    action_in_ids= []
-    for action in actions:
-        # Prepare conversation
-        action_str = action_tokenizer(action)
-        inp = (f"shows the current observation from the robot's wrist-mounted camera. "
-                f"The robot manipulation arm is attempting to {instruction}. "
-                f"What action should the robot take to effectively accomplish the task? "
-                f"ASSISTANT: The robot should take the action: {action_str} "
-                f"USER: Please evaluate the quality of the robot action. "
-                f"A good robot action should consider different factors, "
-                f"especially interactions with surrounding objects and human preferences.\n"
-                f"ASSISTANT: Based on how humans would control the robot arm and the "
-                f"awareness of the situation, the quality score of the robot action is</s")
+    scores = rm.get_reward(batch_size, instruction, image_path, actions)
 
-        if data_args.mm_use_im_start_end:
-            inp = DEFAULT_IM_START_TOKEN + DEFAULT_IMAGE_TOKEN + DEFAULT_IM_END_TOKEN + '\n' + inp
-        else:
-            inp = DEFAULT_IMAGE_TOKEN + '\n' + inp
+    print(scores)
 
-        conv = conv_template.copy()
-        conv.append_message(conv.roles[0], inp)
-        prompt = conv.get_prompt()
-        prompt = prompt.replace("<image>", "<|endoftext|>")
-        in_ids = tokenizer(prompt).input_ids
-        in_ids.pop()
-        in_ids[25]=-200
-        action_in_ids.append(in_ids)
-
-    ex_input_ids = torch.tensor(action_in_ids, dtype=torch.long)
-    from typing import Sequence
-    import einops
-    def pad_sequence_from_left(
-        sequences: Sequence[torch.Tensor],
-        batch_first: bool = False,
-        padding_value: float = 0.0,
-    ):
-        """Mirror of `torch.nn.utils.rnn.pad_sequence`, but pad from left."""
-        sequences = tuple(sequence.flip(0) for sequence in sequences)
-        padded_sequence = torch._C._nn.pad_sequence(
-            sequences, batch_first, padding_value
-        )  # noqa
-        padded_sequence = padded_sequence.flip(int(batch_first))
-        return padded_sequence
-
-    def _left_pad_helper(ex_input_ids, batch_size):
-        # TODO(lxuechen): Potentially replace with `transformers.PretrainedTokenizerBase.prepare_for_model`.
-        # `instances` is a list of dicts, each dict has key whose value is a list of tensors, possibly of unequal length.
-        # input_ids = [seq for instance in instances for seq in instance[key]]  # Flatten.
-        input_ids = [seq for seq in ex_input_ids]
-        input_ids = pad_sequence_from_left(
-            input_ids,
-            batch_first=True,
-            padding_value=tokenizer.pad_token_id,
-        )
-        input_ids = einops.rearrange(
-            input_ids,
-            "(bsz num_candidates) max_seq_len -> bsz num_candidates max_seq_len",
-            num_candidates=batch_size,
-        )
-        return input_ids
-    batch_size = 2
-    input_ids = _left_pad_helper(ex_input_ids, batch_size).squeeze(0)
-    attention_mask = input_ids.ne(tokenizer.pad_token_id).long()
-
-    # print("input_ids: ", input_ids.shape)
-    # print("attn_mask: ", attention_mask.shape)
-    #input id works -----------------------------------------------------------
-
-
-    #image loading works
-    from PIL import Image
-    processor = data_args.image_processor
-    image = Image.open("robot.jpg").convert("RGB")
-    if data_args.image_aspect_ratio == "pad":
-        def expand2square(pil_img, background_color):
-            width, height = pil_img.size
-            if width == height:
-                return pil_img
-            elif width > height:
-                result = Image.new(
-                    pil_img.mode, (width, width), background_color
-                )
-                result.paste(pil_img, (0, (width - height) // 2))
-                return result
-            else:
-                result = Image.new(
-                    pil_img.mode, (height, height), background_color
-                )
-                result.paste(pil_img, ((height - width) // 2, 0))
-                return result
-        def resize_to_256(pil_img):
-            width, height = pil_img.size
-            if width == 256 and height == 256:
-                return pil_img
-            else:
-                return pil_img.resize((256, 256), Image.Resampling.LANCZOS)
-
-        image = resize_to_256(image)
-        image = expand2square(
-            image, tuple(int(x * 255) for x in processor.image_mean)
-        )
-        image = processor.preprocess(image, return_tensors="pt")[
-            "pixel_values"
-        ][0]
-
-    images = image.unsqueeze(0).repeat(batch_size, 1, 1, 1)
-
-    model_inputs = {
-        "input_ids": input_ids.cuda(0).to(torch.int64),
-        "attention_mask": attention_mask.cuda(0).to(torch.int64),
-        "images": images.cuda(0).to(torch.bfloat16)
-    }
-    score = model.forward(**model_inputs)
-    print("score: ", score)
-
-if __name__ == "__main__":
-    train()
