@@ -316,13 +316,18 @@ class DataCollatorForBinaryRewardModelingDataset(object):
             "(bsz num_candidates) max_seq_len -> bsz num_candidates max_seq_len",
             num_candidates=len(instances[0][key]),
         )
+        # print("instance key:", len(instances[0][key]))
         return input_ids
 
     def __call__(self, instances: Sequence[Dict]) -> Dict[str, torch.Tensor]:
+        # print("instance: ",instances)
         index_0, index_1, choice = tuple(
             torch.stack([instance[key] for instance in instances])
             for key in ("index_0", "index_1", "choice")
         )
+        # print("ind0: ", index_0)
+        # print("ind1: ", index_1)
+
         input_ids = self._left_pad_helper(instances, "input_ids")
         attention_mask = input_ids.ne(self.tokenizer.pad_token_id).long()
 

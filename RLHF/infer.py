@@ -333,6 +333,33 @@ def train():
     
     config = RewardConfig(backbone_model_name_or_path=model_args.model_name_or_path)
 
+    with DisableLogger():
+        model = RewardModel(
+            args=args,
+            config=config,
+            qlora=True,
+            checkpoint_dir=checkpoint_dir,
+            tokenizer=tokenizer,
+        )
+
+    model.backbone_model.config.use_cache = False
+    print_trainable_parameters(args, model)
+    print("loaded model")
+    # print(model)
+    set_seed(args.seed)
+
+    dtypes = {}
+    for _, p in model.named_parameters():
+        dtype = p.dtype
+        if dtype not in dtypes:
+            dtypes[dtype] = 0
+        dtypes[dtype] += p.numel()
+    total = 0
+    for k, v in dtypes.items():
+        total += v
+    for k, v in dtypes.items():
+        print(k, v, v / total)
+
 
     #input id works -----------------------------------------------------------
 
@@ -409,8 +436,8 @@ def train():
     input_ids = _left_pad_helper(ex_input_ids, batch_size).squeeze(0)
     attention_mask = input_ids.ne(tokenizer.pad_token_id).long()
 
-    # print(input_ids.shape)
-    # print(attention_mask.shape)
+    # print("input_ids: ", input_ids.shape)
+    # print("attn_mask: ", attention_mask.shape)
     #input id works -----------------------------------------------------------
 
 
@@ -443,28 +470,18 @@ def train():
             "pixel_values"
         ][0]
 
-    image = image.unsqueeze(0).repeat(batch_size, 1, 1, 1)
+    images = image.unsqueeze(0).repeat(batch_size, 1, 1, 1)
     # print(image)
     # print(image.shape)
     # image loading works
 
-    with DisableLogger():
-        model = RewardModel(
-            args=args,
-            config=config,
-            qlora=True,
-            checkpoint_dir=checkpoint_dir,
-            tokenizer=tokenizer,
-        )
-
-    model.backbone_model.config.use_cache = False
-    print_trainable_parameters(args, model)
-    print("loaded model")
-    print(model)
-    set_seed(args.seed)
-
-
-
+    model_inputs = {
+        "input_ids": input_ids.cuda(0).to(torch.int64),
+        "attention_mask": attention_mask.cuda(0).to(torch.int64),
+        "images": images.cuda(0).to(torch.bfloat16)
+    }
+    score = model.forward(**model_inputs)
+    print("score: ", score)
 
 if __name__ == "__main__":
     train()
