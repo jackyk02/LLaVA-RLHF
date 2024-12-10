@@ -5,7 +5,6 @@ set -x
 
 export CUDA_VISIBLE_DEVICES=0
 export MODEL_DIR="/root/LLaVA-RLHF/model_dir"
-export CHECKPOINT_DIR="/root/LLaVA-RLHF/model_dir/checkpoint-4800"
 export PYTHONPATH="$PWD:$PYTHONPATH"
 export GPUS_PER_NODE=1
 
