@@ -331,36 +331,62 @@ def train():
         ) = model_args.mm_use_im_start_end
         training_args.use_im_start_end = model_args.mm_use_im_start_end
     
-    config = RewardConfig(backbone_model_name_or_path=model_args.model_name_or_path)
+    #get input ids from prompt-----------------------------------------------------------
+    from action_processing import ActionTokenizer
+    action_tokenizer = ActionTokenizer(tokenizer)
+    actions = [
+        [-0.0006071124225854874, -0.001102231559343636, -0.002975916489958763, -0.0037233866751194, 0.009374408982694149, 0.00042649864917621017, 1.003713607788086], #action0
+        [0.0007309613865800202, -0.00033146265195682645, 8.855393389239907e-05, 0.0023672617971897125, -0.00297730159945786, 0.0071182833053171635, 1.0025840997695923]
+    ]
+    instruction = "place utensil in between towel and pot"
+    from moellava.conversation import conv_templates, SeparatorStyle
+    conv_mode = "vicuna_v1"
+    conv_template = conv_templates[conv_mode].copy()
 
-    with DisableLogger():
-        model = RewardModel(
-            args=args,
-            config=config,
-            qlora=True,
-            checkpoint_dir="/root/LLaVA-RLHF/model_dir/checkpoint-2800",
-            tokenizer=tokenizer,
-        )
+    for action in actions:
+        # Prepare conversation
+        action_str = action_tokenizer(action)
+        inp = (f"shows the current observation from the robot's wrist-mounted camera. "
+                f"The robot manipulation arm is attempting to {instruction}. "
+                f"What action should the robot take to effectively accomplish the task? "
+                f"ASSISTANT: The robot should take the action: {action_str} "
+                f"USER: Please evaluate the quality of the robot action. "
+                f"A good robot action should consider different factors, "
+                f"especially interactions with surrounding objects and human preferences.\n"
+                f"ASSISTANT: Based on how humans would control the robot arm and the "
+                f"awareness of the situation, the quality score of the robot action is</s")
 
-    model.backbone_model.config.use_cache = False
-    print_trainable_parameters(args, model)
-    print("loaded model")
-    # print(model)
-    set_seed(args.seed)
+        if model.config.mm_use_im_start_end:
+            inp = DEFAULT_IM_START_TOKEN + DEFAULT_IMAGE_TOKEN + DEFAULT_IM_END_TOKEN + '\n' + inp
+        else:
+            inp = DEFAULT_IMAGE_TOKEN + '\n' + inp
 
-    dtypes = {}
-    for _, p in model.named_parameters():
-        dtype = p.dtype
-        if dtype not in dtypes:
-            dtypes[dtype] = 0
-        dtypes[dtype] += p.numel()
-    total = 0
-    for k, v in dtypes.items():
-        total += v
-    for k, v in dtypes.items():
-        print(k, v, v / total)
+        conv = conv_template.copy()
+        conv.append_message(conv.roles[0], inp)
+        prompt = conv.get_prompt()
+        prompt = prompt.replace("<image>", "<|endoftext|>")
+        in_ids = tokenizer(prompt).input_ids
+        in_ids.pop()
+        in_ids[25]=-200
+        print(torch.tensor(in_ids, dtype=torch.int64))
 
+    # config = RewardConfig(backbone_model_name_or_path=model_args.model_name_or_path)
 
+    # with DisableLogger():
+    #     model = RewardModel(
+    #         args=args,
+    #         config=config,
+    #         qlora=True,
+    #         checkpoint_dir="/root/LLaVA-RLHF/model_dir/checkpoint-4800",
+    #         tokenizer=tokenizer,
+    #     )
+
+    # model.backbone_model.config.use_cache = False
+    # print_trainable_parameters(args, model)
+    # print("loaded model")
+    # # print(model)
+    # set_seed(args.seed)
+    
     #input id works -----------------------------------------------------------
 
     ex_input_ids_0 = [32,   6369,   1990,    264,   1217,    323,    459,  15592,  11376,
@@ -398,6 +424,7 @@ def train():
         279,  12585,   6916,    323,    279,  17985,    315,    279,   6671,
             11,    279,   4367,   5573,    315,    279,  12585,   1957,    374,
         524,  82]
+    print("ex_input_ids_1: ", torch.tensor(ex_input_ids_1, dtype=torch.int64))
     input = [ex_input_ids_0, ex_input_ids_1]
 
     ex_input_ids = torch.tensor(input, dtype=torch.long)
