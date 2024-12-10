@@ -58,7 +58,7 @@ torchrun \
     --eval_dataset_path $DATA_DIR/$PREFERENCE_DATA \
     --dataset_name "none" \
     --eval_dataset_name "none" \
-    --eval_size 500 \
+    --eval_size 512 \
     --bits 16 \
     --lora_r 64 \
     --lora_modules q_proj k_proj v_proj o_proj gate_proj up_proj down_proj \
