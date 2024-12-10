@@ -330,8 +330,25 @@ def train():
             data_args.mm_use_im_start_end
         ) = model_args.mm_use_im_start_end
         training_args.use_im_start_end = model_args.mm_use_im_start_end
+
+    config = RewardConfig(backbone_model_name_or_path=model_args.model_name_or_path)
+
+    with DisableLogger():
+        model = RewardModel(
+            args=args,
+            config=config,
+            qlora=True,
+            checkpoint_dir="/root/LLaVA-RLHF/model_dir/checkpoint-4800",
+            tokenizer=tokenizer,
+        )
+
+    model.backbone_model.config.use_cache = False
+    print_trainable_parameters(args, model)
+    print("loaded model")
+    # print(model)
+    set_seed(args.seed)
     
-    #get input ids from prompt-----------------------------------------------------------
+    #input id works -----------------------------------------------------------
     from action_processing import ActionTokenizer
     action_tokenizer = ActionTokenizer(tokenizer)
     actions = [
@@ -343,6 +360,7 @@ def train():
     conv_mode = "vicuna_v1"
     conv_template = conv_templates[conv_mode].copy()
 
+    action_in_ids= []
     for action in actions:
         # Prepare conversation
         action_str = action_tokenizer(action)
@@ -356,7 +374,7 @@ def train():
                 f"ASSISTANT: Based on how humans would control the robot arm and the "
                 f"awareness of the situation, the quality score of the robot action is</s")
 
-        if model.config.mm_use_im_start_end:
+        if data_args.mm_use_im_start_end:
             inp = DEFAULT_IM_START_TOKEN + DEFAULT_IMAGE_TOKEN + DEFAULT_IM_END_TOKEN + '\n' + inp
         else:
             inp = DEFAULT_IMAGE_TOKEN + '\n' + inp
@@ -368,66 +386,9 @@ def train():
         in_ids = tokenizer(prompt).input_ids
         in_ids.pop()
         in_ids[25]=-200
-        print(torch.tensor(in_ids, dtype=torch.int64))
+        action_in_ids.append(in_ids)
 
-    # config = RewardConfig(backbone_model_name_or_path=model_args.model_name_or_path)
-
-    # with DisableLogger():
-    #     model = RewardModel(
-    #         args=args,
-    #         config=config,
-    #         qlora=True,
-    #         checkpoint_dir="/root/LLaVA-RLHF/model_dir/checkpoint-4800",
-    #         tokenizer=tokenizer,
-    #     )
-
-    # model.backbone_model.config.use_cache = False
-    # print_trainable_parameters(args, model)
-    # print("loaded model")
-    # # print(model)
-    # set_seed(args.seed)
-    
-    #input id works -----------------------------------------------------------
-
-    ex_input_ids_0 = [32,   6369,   1990,    264,   1217,    323,    459,  15592,  11376,
-          44658,  18328,    430,  67349,    279,   9293,   5178,    315,    264,
-          12585,  34786,   1887,     13,  14194,     25,    220,   -200,    198,
-          60556,    279,   1510,  22695,    505,    279,  12585,    596,  33271,
-          78830,   6382,     13,    578,  12585,  34786,   6916,    374,  19969,
-            311,   2035,  82036,    321,    304,   1990,  43713,    323,   3419,
-             13,   3639,   1957,   1288,    279,  12585,   1935,    311,  13750,
-          22829,    279,   3465,     30,  36660,   3931,   2891,     25,    578,
-          12585,   1288,   1935,    279,   1957,     25,    379,  12855, 100160,
-         100166, 100164, 100147, 100155, 100035, 100257,  14194,     25,   5321,
-          15806,    279,   4367,    315,    279,  12585,   1957,     13,    362,
-           1695,  12585,   1957,   1288,   2980,   2204,   9547,     11,   5423,
-          22639,    449,  14932,   6302,    323,   3823,  19882,    627,   5045,
-           3931,   2891,     25,  20817,    389,   1268,  12966,   1053,   2585,
-            279,  12585,   6916,    323,    279,  17985,    315,    279,   6671,
-             11,    279,   4367,   5573,    315,    279,  12585,   1957,    374,
-            524,  82]
-    
-    ex_input_ids_1 = [32,   6369,   1990,    264,   1217,    323,    459,  15592,  11376,
-        44658,  18328,    430,  67349,    279,   9293,   5178,    315,    264,
-        12585,  34786,   1887,     13,  14194,     25,    220,   -200,    198,
-        60556,    279,   1510,  22695,    505,    279,  12585,    596,  33271,
-        78830,   6382,     13,    578,  12585,  34786,   6916,    374,  19969,
-        311,   2035,  82036,    321,    304,   1990,  43713,    323,   3419,
-            13,   3639,   1957,   1288,    279,  12585,   1935,    311,  13750,
-        22829,    279,   3465,     30,  36660,   3931,   2891,     25,    578,
-        12585,   1288,   1935,    279,   1957,     25,    379,  12855, 100160,
-        100166, 100164, 100147, 100155, 100035, 100257,  14194,     25,   5321,
-        15806,    279,   4367,    315,    279,  12585,   1957,     13,    362,
-        1695,  12585,   1957,   1288,   2980,   2204,   9547,     11,   5423,
-        22639,    449,  14932,   6302,    323,   3823,  19882,    627,   5045,
-        3931,   2891,     25,  20817,    389,   1268,  12966,   1053,   2585,
-        279,  12585,   6916,    323,    279,  17985,    315,    279,   6671,
-            11,    279,   4367,   5573,    315,    279,  12585,   1957,    374,
-        524,  82]
-    print("ex_input_ids_1: ", torch.tensor(ex_input_ids_1, dtype=torch.int64))
-    input = [ex_input_ids_0, ex_input_ids_1]
-
-    ex_input_ids = torch.tensor(input, dtype=torch.long)
+    ex_input_ids = torch.tensor(action_in_ids, dtype=torch.long)
     from typing import Sequence
     import einops
     def pad_sequence_from_left(
@@ -489,7 +450,14 @@ def train():
                 )
                 result.paste(pil_img, ((height - width) // 2, 0))
                 return result
+        def resize_to_256(pil_img):
+            width, height = pil_img.size
+            if width == 256 and height == 256:
+                return pil_img
+            else:
+                return pil_img.resize((256, 256), Image.Resampling.LANCZOS)
 
+        image = resize_to_256(image)
         image = expand2square(
             image, tuple(int(x * 255) for x in processor.image_mean)
         )
