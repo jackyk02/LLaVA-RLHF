@@ -324,7 +324,7 @@ class RobotRewardModel:
                 args=args,
                 config=config,
                 qlora=True,
-                checkpoint_dir="/root/LLaVA-RLHF/model_dir/checkpoint-4800",
+                checkpoint_dir="/root/LLaVA-RLHF/model_dir/checkpoint-6800",
                 tokenizer=tokenizer,
             )
 
