@@ -338,7 +338,8 @@ class RobotRewardModel:
         self.data_args = data_args
 
 
-    def get_reward(self, batch_size, instruction, image_path, actions):
+    def get_rewards(self, instruction, image_path, actions):
+        batch_size = len(actions)
         #input id works -----------------------------------------------------------
         from action_processing import ActionTokenizer
         action_tokenizer = ActionTokenizer(self.tokenizer)
@@ -453,23 +454,62 @@ class RobotRewardModel:
             "attention_mask": attention_mask.cuda(0).to(torch.int64),
             "images": images.cuda(0).to(torch.bfloat16)
         }
-        score = self.model.forward(**model_inputs)
-        return score
+        scores = self.model.forward(**model_inputs)
+        return scores.rewards.detach().cpu().tolist()
 
 if __name__ == "__main__":
-    rm = RobotRewardModel()
+    # rm = RobotRewardModel()
 
-    instruction = "move the yellow knife to the right of the pan"
-    image_path = "images/robot.jpg"
-    actions = [
-        [-0.0006071124225854874, -0.001102231559343636, -0.002975916489958763, -0.0037233866751194, 0.009374408982694149, 0.00042649864917621017, 1.003713607788086], #action0
-        [0.0007309613865800202, -0.00033146265195682645, 8.855393389239907e-05, 0.0023672617971897125, -0.00297730159945786, 0.0071182833053171635, 1.0025840997695923],
-                [-0.0006071124225854874, -0.001102231559343636, -0.002975916489958763, -0.0037233866751194, 0.009374408982694149, 0.00042649864917621017, 1.003713607788086], #action0
-        [0.0007309613865800202, -0.00033146265195682645, 8.855393389239907e-05, 0.0023672617971897125, -0.00297730159945786, 0.0071182833053171635, 1.0025840997695923],
-    ]
-    batch_size = len(actions)
+    # instruction = "move the yellow knife to the right of the pan"
+    # image_path = "images/robot.jpg"
+    # actions = [
+    #     [-0.0006071124225854874, -0.001102231559343636, -0.002975916489958763, -0.0037233866751194, 0.009374408982694149, 0.00042649864917621017, 1.003713607788086], #action0
+    #     [0.0007309613865800202, -0.00033146265195682645, 8.855393389239907e-05, 0.0023672617971897125, -0.00297730159945786, 0.0071182833053171635, 1.0025840997695923],
+    #             [-0.0006071124225854874, -0.001102231559343636, -0.002975916489958763, -0.0037233866751194, 0.009374408982694149, 0.00042649864917621017, 1.003713607788086], #action0
+    #     [0.0007309613865800202, -0.00033146265195682645, 8.855393389239907e-05, 0.0023672617971897125, -0.00297730159945786, 0.0071182833053171635, 1.0025840997695923],
+    # ]
 
-    scores = rm.get_reward(batch_size, instruction, image_path, actions)
-    scores = scores.rewards.detach().cpu().tolist()
-    print(scores)
+    # scores = rm.get_reward(instruction, image_path, actions)
+    # print(scores)
+    from fastapi import FastAPI, HTTPException, Request
+    from pydantic import BaseModel
+    import uvicorn
+    import json_numpy as json
+    import numpy as np
 
+    app = FastAPI()
+
+    reward_model = RobotRewardModel()
+
+    class InputData(BaseModel):
+        instruction: str
+        image_path: str
+
+    @app.get("/")
+    async def read_root():
+        return {"message": "RM server up"}
+
+    @app.post("/process")
+    async def process_data(request: Request):
+        body = await request.body()
+        data = json.loads(body)
+
+        instruction = data.get("instruction")
+        image_path = data.get("image_path")
+        action = data.get("action")
+
+        if not isinstance(instruction, str):
+            raise HTTPException(status_code=400, detail="Instruction must be a string")
+        if not isinstance(image_path, str):
+            raise HTTPException(status_code=400, detail="Image path must be a string")
+
+        action_array = np.array(action)
+
+        if action_array.ndim != 2:
+            raise HTTPException(status_code=400, detail="Action must be a 2D array")
+
+        rewards = reward_model.get_rewards(instruction, image_path, action_array)
+
+        return {"rewards": rewards}
+
+    uvicorn.run(app, host="0.0.0.0", port=3100)
