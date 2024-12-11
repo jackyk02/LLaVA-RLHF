@@ -453,7 +453,7 @@ class RobotRewardModel:
         model_inputs = {
             "input_ids": input_ids.cuda(0).to(torch.int64),
             "attention_mask": attention_mask.cuda(0).to(torch.int64),
-            "images": images.cuda(0).to(torch.bfloat16)
+            "images": images.cuda(0).to(torch.float32)
         }
         scores = self.model.forward(**model_inputs)
         return scores.rewards.detach().cpu().tolist()
@@ -509,7 +509,13 @@ if __name__ == "__main__":
         if action_array.ndim != 2:
             raise HTTPException(status_code=400, detail="Action must be a 2D array")
 
+        import time
+        start_time = time.time()
+
         rewards = reward_model.get_rewards(instruction, image_path, action_array)
+        
+        execution_time = time.time() - start_time
+        print(execution_time)
 
         return {"rewards": rewards}
 
