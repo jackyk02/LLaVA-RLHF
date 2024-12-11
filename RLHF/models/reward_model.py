@@ -71,7 +71,7 @@ def make_generative_vlm(
     qlora: bool = False,
     checkpoint_dir: Optional[str] = None,
     adapter_name="lora_default",
-    is_trainable=False,
+    is_trainable=True,
     reuse_base_model=False,
     tokenizer=None,
     **kwargs,
@@ -141,7 +141,7 @@ class RewardModelOutput(ModelOutput):
 
 class RewardModel(transformers.PreTrainedModel):
     config_class = RewardConfig
-    supports_gradient_checkpointing = False
+    supports_gradient_checkpointing = True
 
     def __init__(
         self,
@@ -161,7 +161,8 @@ class RewardModel(transformers.PreTrainedModel):
             adapter_name=adapter_name,
             tokenizer=tokenizer,
             **kwargs,
-        ).to(torch.bfloat16).eval()
+        )
+        self.backbone_model = self.backbone_model.to(torch.float32).cuda()
         hidden_size = get_transformer_hidden_size(self.backbone_model)
         reward_head = nn.Linear(hidden_size, 1)
         torch.nn.init.zeros_(reward_head.bias)
@@ -180,47 +181,47 @@ class RewardModel(transformers.PreTrainedModel):
             else:
                 print(f"Warning: reward head not found at {reward_head_path}")
 
-        self.reward_head.requires_grad_(kwargs.get("is_trainable", False))
+        self.reward_head.requires_grad_(kwargs.get("is_trainable", True))
 
     def forward(
         self, input_ids, attention_mask=None, images=None, return_dict=True, **kwargs
     ):
-        with torch.no_grad():
-            # We only compute the rewards and don't compute the logistic regression loss in this function so that it's
-            # easier to use for later stages of reranking / RL training.
-            self.backbone_model.set_adapter(self.adapter_name)
-            self.backbone_model.config.use_cache = True
-            # print("=== Input Tensor Information ===")
-            # print("Input IDs - dtype:", input_ids.dtype, "| device:", input_ids.device, "| shape:", input_ids.shape)
-            # print("Attention Mask - dtype:", attention_mask.dtype, "| device:", attention_mask.device, "| shape:", attention_mask.shape)
-            # print("Images - dtype:", images.dtype, "| device:", images.device, "| shape:", images.shape)
 
-            outputs = self.backbone_model(
-                input_ids=input_ids,
-                attention_mask=attention_mask,
-                return_dict=True,
-                output_hidden_states=True,
-                images=images,
-                **kwargs,
-            )
-            last_hidden_state = outputs.hidden_states[-1]
-            assert isinstance(last_hidden_state, torch.Tensor), f"{outputs}"
-            # last_hidden_state = outputs.last_hidden_state
-            # TODO(zhiqings): Hacking to make sure every parameter is used in the backward pass.
-            logits = outputs.logits
-            last_hidden_state = last_hidden_state + 0.0 * torch.mean(logits)
+        # We only compute the rewards and don't compute the logistic regression loss in this function so that it's
+        # easier to use for later stages of reranking / RL training.
+        self.backbone_model.set_adapter(self.adapter_name)
+        self.backbone_model.config.use_cache = False
+        # print("=== Input Tensor Information ===")
+        # print("Input IDs - dtype:", input_ids.dtype, "| device:", input_ids.device, "| shape:", input_ids.shape)
+        # print("Attention Mask - dtype:", attention_mask.dtype, "| device:", attention_mask.device, "| shape:", attention_mask.shape)
+        # print("Images - dtype:", images.dtype, "| device:", images.device, "| shape:", images.shape)
 
-            last_hidden_state_at_the_end = last_hidden_state[:, -1, :]
-            # TODO(lxuechen): Make returning rewards at all positions and last_hidden_state an option.
-            # last_hidden_state_at_the_end = last_hidden_state_at_the_end.type_as(
-            #     next(self.reward_head.parameters()) # HACK(sheng): error with data parallel
-            # )
-            last_hidden_state_at_the_end = last_hidden_state_at_the_end.type_as(
-                self.reward_head.weight
-            )
-            # print(last_hidden_state_at_the_end.device, self.reward_head.weight.device, self.reward_head.bias.device)
-            rewards = self.reward_head(last_hidden_state_at_the_end).squeeze(-1)
-            return RewardModelOutput(rewards=rewards) if return_dict else (rewards,)
+        outputs = self.backbone_model(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            return_dict=True,
+            output_hidden_states=True,
+            images=images,
+            **kwargs,
+        )
+        last_hidden_state = outputs.hidden_states[-1]
+        assert isinstance(last_hidden_state, torch.Tensor), f"{outputs}"
+        # last_hidden_state = outputs.last_hidden_state
+        # TODO(zhiqings): Hacking to make sure every parameter is used in the backward pass.
+        logits = outputs.logits
+        last_hidden_state = last_hidden_state + 0.0 * torch.mean(logits)
+
+        last_hidden_state_at_the_end = last_hidden_state[:, -1, :]
+        # TODO(lxuechen): Make returning rewards at all positions and last_hidden_state an option.
+        # last_hidden_state_at_the_end = last_hidden_state_at_the_end.type_as(
+        #     next(self.reward_head.parameters()) # HACK(sheng): error with data parallel
+        # )
+        last_hidden_state_at_the_end = last_hidden_state_at_the_end.type_as(
+            self.reward_head.weight
+        )
+        # print(last_hidden_state_at_the_end.device, self.reward_head.weight.device, self.reward_head.bias.device)
+        rewards = self.reward_head(last_hidden_state_at_the_end).squeeze(-1)
+        return RewardModelOutput(rewards=rewards) if return_dict else (rewards,)
 
     def _set_gradient_checkpointing(self, module, value=False):
         if isinstance(module, transformers.LlamaModel):
