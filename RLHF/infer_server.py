@@ -370,9 +370,10 @@ class RobotRewardModel:
             in_ids = self.tokenizer(prompt).input_ids
             in_ids.pop()
             in_ids[25]=-200
+            in_ids = torch.tensor(in_ids, dtype=torch.long)
             action_in_ids.append(in_ids)
 
-        ex_input_ids = torch.tensor(action_in_ids, dtype=torch.long)
+        # ex_input_ids = torch.tensor(action_in_ids, dtype=torch.long)
         from typing import Sequence
         import einops
         def pad_sequence_from_left(
@@ -404,7 +405,7 @@ class RobotRewardModel:
                 num_candidates=batch_size,
             )
             return input_ids
-        input_ids = _left_pad_helper(ex_input_ids, batch_size).squeeze(0)
+        input_ids = _left_pad_helper(action_in_ids, batch_size).squeeze(0)
         attention_mask = input_ids.ne(self.tokenizer.pad_token_id).long()
 
         # print("input_ids: ", input_ids.shape)
