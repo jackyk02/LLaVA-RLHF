@@ -335,6 +335,7 @@ class RobotRewardModel:
         set_seed(args.seed)
         self.tokenizer = tokenizer
         self.model = model
+        self.model.eval()
         self.data_args = data_args
 
 
@@ -455,7 +456,8 @@ class RobotRewardModel:
             "attention_mask": attention_mask.cuda(0).to(torch.int64),
             "images": images.cuda(0).to(torch.float32)
         }
-        scores = self.model.forward(**model_inputs)
+        with torch.no_grad():
+            scores = self.model.forward(**model_inputs)
         return scores.rewards.detach().cpu().tolist()
 
 if __name__ == "__main__":
