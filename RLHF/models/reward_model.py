@@ -162,7 +162,7 @@ class RewardModel(transformers.PreTrainedModel):
             tokenizer=tokenizer,
             **kwargs,
         )
-        self.backbone_model = self.backbone_model.to(torch.float32).cuda()
+        self.backbone_model = self.backbone_model.cuda(0).to(torch.float32)
         hidden_size = get_transformer_hidden_size(self.backbone_model)
         reward_head = nn.Linear(hidden_size, 1)
         torch.nn.init.zeros_(reward_head.bias)
@@ -192,9 +192,9 @@ class RewardModel(transformers.PreTrainedModel):
         self.backbone_model.set_adapter(self.adapter_name)
         self.backbone_model.config.use_cache = False
         # print("=== Input Tensor Information ===")
-        # print("Input IDs - dtype:", input_ids.dtype, "| device:", input_ids.device, "| shape:", input_ids.shape)
-        # print("Attention Mask - dtype:", attention_mask.dtype, "| device:", attention_mask.device, "| shape:", attention_mask.shape)
-        # print("Images - dtype:", images.dtype, "| device:", images.device, "| shape:", images.shape)
+        print("Input IDs - dtype:", input_ids.dtype, "| device:", input_ids.device, "| shape:", input_ids.shape)
+        print("Attention Mask - dtype:", attention_mask.dtype, "| device:", attention_mask.device, "| shape:", attention_mask.shape)
+        print("Images - dtype:", images.dtype, "| device:", images.device, "| shape:", images.shape)
 
         outputs = self.backbone_model(
             input_ids=input_ids,

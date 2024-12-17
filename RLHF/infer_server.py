@@ -324,7 +324,7 @@ class RobotRewardModel:
                 args=args,
                 config=config,
                 qlora=True,
-                checkpoint_dir="/root/LLaVA-RLHF/model_dir/checkpoint-6800",
+                checkpoint_dir="/root/LLaVA-RLHF/model_dir/checkpoint-2200",
                 tokenizer=tokenizer,
             )
 
@@ -349,18 +349,21 @@ class RobotRewardModel:
         conv_template = conv_templates[conv_mode].copy()
 
         action_in_ids= []
+        instruction = instruction.lower().rstrip('.')
+
         for action in actions:
             # Prepare conversation
-            action_str = action_tokenizer(action)
+            action_id = action_tokenizer(action)
+            holder = "hello hello hello hello hello hello hello " 
             inp = (f"shows the current observation from the robot's wrist-mounted camera. "
                     f"The robot manipulation arm is attempting to {instruction}. "
                     f"What action should the robot take to effectively accomplish the task? "
-                    f"ASSISTANT: The robot should take the action: {action_str} "
+                    f"ASSISTANT: The robot should take the action: {holder} <|endoftext|> "
                     f"USER: Please evaluate the quality of the robot action. "
                     f"A good robot action should consider different factors, "
                     f"especially interactions with surrounding objects and human preferences.\n"
                     f"ASSISTANT: Based on how humans would control the robot arm and the "
-                    f"awareness of the situation, the quality score of the robot action is</s")
+                    f"awareness of the situation, the quality score of the robot action is")
 
             inp = DEFAULT_IMAGE_TOKEN + '\n' + inp
 
@@ -368,10 +371,42 @@ class RobotRewardModel:
             conv.append_message(conv.roles[0], inp)
             prompt = conv.get_prompt()
             prompt = prompt.replace("<image>", "<|endoftext|>")
-            in_ids = self.tokenizer(prompt).input_ids
-            in_ids.pop()
-            in_ids[25]=-200
-            in_ids = torch.tensor(in_ids, dtype=torch.long)
+
+            print("original prompt: ", prompt)
+
+            in_ids = self.tokenizer(
+                prompt,
+                return_tensors="pt",
+                padding="longest",
+                max_length=self.tokenizer.model_max_length,
+                truncation=True,
+            ).input_ids
+
+            print("id: ", in_ids)
+
+            repeated_indices = (in_ids == 24748).nonzero()
+            start_idx = repeated_indices[0][1].item()  # Get the first occurrence
+            end_idx = repeated_indices[-1][1].item() + 1  # Get the last occurrence + 1
+            in_ids[0, start_idx:end_idx] = torch.tensor(action_id)
+
+            # in_ids[0, 25] = -220
+            in_ids = in_ids[:, :-1]
+
+            # Find first occurrence of 25
+            first_25_idx = (in_ids == 25).nonzero()
+            start_idx = first_25_idx[0][1].item()  # Get the first occurrence
+            in_ids[0, start_idx+1] = -220
+            in_ids = torch.cat([in_ids[:, :start_idx+2], in_ids[:, start_idx+3:]], dim=1)
+
+            # Find first occurrence of 256
+            first_256_idx = (in_ids == 256).nonzero()
+            start_idx = first_256_idx[0][1].item()  # Get the first occurrence
+            in_ids[0, start_idx] = 220
+
+            in_ids = torch.tensor(in_ids, dtype=torch.long).squeeze(0)
+
+            print("updated id: ", in_ids)
+            print(in_ids.shape)
             action_in_ids.append(in_ids)
 
         # ex_input_ids = torch.tensor(action_in_ids, dtype=torch.long)
@@ -409,8 +444,9 @@ class RobotRewardModel:
         input_ids = _left_pad_helper(action_in_ids, batch_size).squeeze(0)
         attention_mask = input_ids.ne(self.tokenizer.pad_token_id).long()
 
-        # print("input_ids: ", input_ids.shape)
-        # print("attn_mask: ", attention_mask.shape)
+        print("input_ids: ", input_ids.shape)
+        print("pad id: ", in_ids)
+        print("attn_mask: ", attention_mask.shape)
         #input id works -----------------------------------------------------------
 
         #image loading works
@@ -456,8 +492,8 @@ class RobotRewardModel:
             "attention_mask": attention_mask.cuda(0).to(torch.int64),
             "images": images.cuda(0).to(torch.float32)
         }
-        with torch.no_grad():
-            scores = self.model.forward(**model_inputs)
+        # with torch.no_grad():
+        scores = self.model.forward(**model_inputs)
         return scores.rewards.detach().cpu().tolist()
 
 if __name__ == "__main__":
