@@ -162,7 +162,6 @@ class RewardModel(transformers.PreTrainedModel):
             tokenizer=tokenizer,
             **kwargs,
         )
-        self.backbone_model = self.backbone_model.cuda(0).to(torch.float32)
         hidden_size = get_transformer_hidden_size(self.backbone_model)
         reward_head = nn.Linear(hidden_size, 1)
         torch.nn.init.zeros_(reward_head.bias)
@@ -186,16 +185,12 @@ class RewardModel(transformers.PreTrainedModel):
     def forward(
         self, input_ids, attention_mask=None, images=None, return_dict=True, **kwargs
     ):
-
         # We only compute the rewards and don't compute the logistic regression loss in this function so that it's
         # easier to use for later stages of reranking / RL training.
         self.backbone_model.set_adapter(self.adapter_name)
         self.backbone_model.config.use_cache = False
-        # print("=== Input Tensor Information ===")
-        print("Input IDs - dtype:", input_ids.dtype, "| device:", input_ids.device, "| shape:", input_ids.shape)
-        print("Attention Mask - dtype:", attention_mask.dtype, "| device:", attention_mask.device, "| shape:", attention_mask.shape)
-        print("Images - dtype:", images.dtype, "| device:", images.device, "| shape:", images.shape)
 
+        # print(input_ids.shape, images.shape, 'images', images.dtype)
         outputs = self.backbone_model(
             input_ids=input_ids,
             attention_mask=attention_mask,
@@ -293,20 +288,14 @@ class RewardModelTrainer(transformers.Trainer):
                 "images",
             ),
         )
-        # print("input_ids: ", input_ids.shape)
-        # print("images: ", images.shape)
-        # print("attn_mask: ", attention_mask.shape)
         # repeat images to match the number of candidates
         images = images.unsqueeze(1).repeat(1, input_ids.size(1), 1, 1, 1)
         images = einops.rearrange(images, "b n h w c -> (b n) h w c")
+
         num_candidates, num_pairs = input_ids.size(1), choice.size(1)
-        # print(num_candidates, num_pairs)
         input_ids_flat, attention_mask_flat = tuple(
             einops.rearrange(x, "b c l -> (b c) l") for x in (input_ids, attention_mask)
         )
-        # print("reshaped images: ", images.shape)
-        # print("input_ids_flat: ", input_ids_flat.shape)
-        # print("attention_mask_flat: ", attention_mask_flat.shape)
         outputs = model(
             input_ids=input_ids_flat, attention_mask=attention_mask_flat, images=images
         )

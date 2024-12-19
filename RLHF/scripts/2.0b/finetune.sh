@@ -58,7 +58,7 @@ torchrun \
     --eval_dataset_path $DATA_DIR/$PREFERENCE_DATA \
     --dataset_name "none" \
     --eval_dataset_name "none" \
-    --eval_size 500 \
+    --eval_size 1 \
     --bits 16 \
     --lora_r 64 \
     --lora_modules q_proj k_proj v_proj o_proj gate_proj up_proj down_proj \
@@ -66,7 +66,7 @@ torchrun \
     --num_train_epochs $NUM_EPOCHS \
     --group_by_length False \
     --evaluation_strategy "steps" \
-    --eval_steps 50 \
+    --eval_steps 1 \
     --save_strategy "steps" \
     --save_steps 50 \
     --save_total_limit 10 \

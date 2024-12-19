@@ -27,7 +27,8 @@ from peft import (
     PeftModelForCausalLM,
 )
 from peft.tuners.lora import LoraLayer
-from moellava.model import LlavaLlamaForCausalLM
+from moellava.model import MoELLaVALlamaForCausalLM
+from moellava.model.language_model.llava_stablelm_moe import EvalMoELLaVAStablelmForCausalLM
 
 REGISTERED_BASE_MODELS = {}
 
@@ -109,7 +110,7 @@ def get_accelerate_model(
 
     print(f"loading base model {args.model_name_or_path}...")
 
-    model = LlavaLlamaForCausalLM.from_pretrained(
+    model = EvalMoELLaVAStablelmForCausalLM.from_pretrained(
         args.model_name_or_path,
         load_in_4bit=args.bits == 4,
         load_in_8bit=args.bits == 8,
@@ -162,7 +163,7 @@ def get_accelerate_model(
                 model,
                 checkpoint_dir,
                 adapter_name=adapter_name,
-                is_trainable=is_trainable,
+                is_trainable=False,
             )
 
             if args.model_name_or_path not in REGISTERED_BASE_MODELS:

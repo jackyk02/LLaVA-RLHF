@@ -392,9 +392,29 @@ def preprocess_v1(
         # else:
         # print(conv.get_prompt() + reward_model_prompt_per_example + "</s>")
         conversations.append(
-            conv.get_prompt() + reward_model_prompt_per_example + "</s>"
+            conv.get_prompt() + reward_model_prompt_per_example + "<|endoftext|>"
         )
     # Tokenize conversations
+
+    #process action inputs
+    def extract_array(s):
+        import re
+        # Find all numbers in square brackets
+        matches = re.findall(r'\[([\d, ]+)\]', s)
+        if matches:
+            # Convert the first match into a list of integers
+            return [int(num) for num in matches[0].split(',')]
+        return []
+
+    new_conversations = []
+    action_ids = []
+    for prompt in conversations:
+        id = extract_array(prompt)
+        action_ids.append(id)
+        # hello is 15339
+        prompt = prompt.replace(str(id), "hello hello hello hello hello hello hello ")
+        new_conversations.append(prompt)
+    conversations = new_conversations
 
     if has_image:
         input_ids = torch.stack(
@@ -412,6 +432,13 @@ def preprocess_v1(
             max_length=tokenizer.model_max_length,
             truncation=True,
         ).input_ids
+    
+    # print("input_ids!!!", input_ids)
+    repeated_indices = (input_ids == 24748).nonzero()
+    start_idx = repeated_indices[0][1].item()  # Get the first occurrence
+    end_idx = repeated_indices[-1][1].item() + 1  # Get the last occurrence + 1
+    input_ids[0, start_idx:end_idx] = torch.tensor(action_ids[0])
+    # print("input_ids after:", input_ids)
 
     targets = input_ids.clone()
     validity = [True] * len(input_ids)

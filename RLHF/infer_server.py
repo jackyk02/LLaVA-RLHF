@@ -252,6 +252,7 @@ def rank0_print(*args):
 
 class RobotRewardModel:
     def __init__(self):
+        torch.set_default_dtype(torch.float32)
         hfparser = transformers.HfArgumentParser(
             (ModelArguments, DataArguments, TrainingArguments)
         )
@@ -325,8 +326,8 @@ class RobotRewardModel:
                 config=config,
                 qlora=True,
                 checkpoint_dir="/root/LLaVA-RLHF/model_dir/checkpoint-2200",
-                tokenizer=tokenizer,
-            )
+                tokenizer=tokenizer
+        )
 
         model.backbone_model.config.use_cache = False
         print_trainable_parameters(args, model)
@@ -405,7 +406,7 @@ class RobotRewardModel:
 
             in_ids = torch.tensor(in_ids, dtype=torch.long).squeeze(0)
 
-            print("updated id: ", in_ids)
+            # print("updated id: ", in_ids)
             print(in_ids.shape)
             action_in_ids.append(in_ids)
 
@@ -444,9 +445,9 @@ class RobotRewardModel:
         input_ids = _left_pad_helper(action_in_ids, batch_size).squeeze(0)
         attention_mask = input_ids.ne(self.tokenizer.pad_token_id).long()
 
-        print("input_ids: ", input_ids.shape)
-        print("pad id: ", in_ids)
-        print("attn_mask: ", attention_mask.shape)
+        # print("input_ids: ", input_ids.shape)
+        # print("pad id: ", in_ids)
+        # print("attn_mask: ", attention_mask.shape)
         #input id works -----------------------------------------------------------
 
         #image loading works
@@ -481,9 +482,12 @@ class RobotRewardModel:
             image = expand2square(
                 image, tuple(int(x * 255) for x in processor.image_mean)
             )
+            
             image = processor.preprocess(image, return_tensors="pt")[
                 "pixel_values"
             ][0]
+            image = image.to(torch.bfloat16)
+            # exit(0)
 
         images = image.unsqueeze(0).repeat(batch_size, 1, 1, 1)
 

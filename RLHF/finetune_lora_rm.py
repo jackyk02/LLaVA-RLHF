@@ -386,6 +386,7 @@ def train():
         trainer.add_callback(SavePeftModelCallback)
 
     # Verifying the datatypes.
+    print(model)
     dtypes = {}
     for _, p in model.named_parameters():
         dtype = p.dtype
