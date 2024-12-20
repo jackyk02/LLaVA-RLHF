@@ -367,7 +367,7 @@ def train():
             qlora=True,
             checkpoint_dir=checkpoint_dir,
             tokenizer=tokenizer,
-        )
+        ).to(torch.bfloat16)
 
     model.backbone_model.config.use_cache = False
     print_trainable_parameters(args, model)
