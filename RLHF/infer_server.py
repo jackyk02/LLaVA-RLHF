@@ -322,25 +322,6 @@ class RobotRewardModel:
                 ]
 
         if model_args.vision_tower is not None:
-            from llava.model import LlavaLlamaForCausalLM
-
-            with DisableLogger():
-                model = LlavaLlamaForCausalLM.from_pretrained(
-                    model_args.model_name_or_path,
-                    cache_dir=training_args.cache_dir,
-                )
-
-            vision_tower = model.get_vision_tower()
-            if not vision_tower.is_loaded:
-                vision_tower.load_model()
-
-            data_args.image_processor = vision_tower.image_processor
-            data_args.is_multimodal = True
-            model.config.mm_use_im_start_end = (
-                data_args.mm_use_im_start_end
-            ) = model_args.mm_use_im_start_end
-            training_args.use_im_start_end = model_args.mm_use_im_start_end
-
             config = RewardConfig(backbone_model_name_or_path=model_args.model_name_or_path)
 
             with DisableLogger():
@@ -352,16 +333,30 @@ class RobotRewardModel:
                     tokenizer=tokenizer,
                 ).to(torch.bfloat16)
 
-            model.backbone_model.config.use_cache = False
+            model.backbone_model.config.use_cache = True
             print_trainable_parameters(args, model)
             print("loaded model")
+
+            with DisableLogger():
+                model_temp = model.backbone_model
+
+            vision_tower = model_temp.get_vision_tower()
+            if not vision_tower.is_loaded:
+                vision_tower.load_model()
+
+            data_args.image_processor = vision_tower.image_processor
+            data_args.is_multimodal = True
+            model_temp.config.mm_use_im_start_end = (
+                data_args.mm_use_im_start_end
+            ) = model_args.mm_use_im_start_end
+            training_args.use_im_start_end = model_args.mm_use_im_start_end
+
             # print(model)
             set_seed(args.seed)
             self.tokenizer = tokenizer
             self.model = model
             self.model.eval()
             self.data_args = data_args
-
 
     def get_rewards(self, instruction, image_path, actions):
         batch_size = len(actions)
@@ -398,7 +393,7 @@ class RobotRewardModel:
             # prompt = "<s> " + prompt
             prompt = prompt.replace("<image>", " holder ")
 
-            print("original prompt: ", prompt)
+            # print("original prompt: ", prompt)
 
             in_ids = self.tokenizer(
                 prompt,
@@ -408,7 +403,7 @@ class RobotRewardModel:
                 truncation=True,
             ).input_ids
 
-            print("id: ", in_ids)
+            # print("id: ", in_ids)
 
             repeated_indices = (in_ids == 22172).nonzero()
             start_idx = repeated_indices[0][1].item()  # Get the first occurrence
@@ -434,8 +429,8 @@ class RobotRewardModel:
 
             in_ids = torch.tensor(in_ids, dtype=torch.long).squeeze(0)
 
-            print("updated id: ", in_ids)
-            print(in_ids.shape)
+            # print("updated id: ", in_ids)
+            # print(in_ids.shape)
             action_in_ids.append(in_ids)
 
         # ex_input_ids = torch.tensor(action_in_ids, dtype=torch.long)
@@ -473,9 +468,9 @@ class RobotRewardModel:
         input_ids = _left_pad_helper(action_in_ids, batch_size).squeeze(0)
         attention_mask = input_ids.ne(self.tokenizer.pad_token_id).long()
 
-        print("input_ids: ", input_ids.shape)
-        print("pad id: ", in_ids)
-        print("attn_mask: ", attention_mask.shape)
+        # print("input_ids: ", input_ids.shape)
+        # print("pad id: ", in_ids)
+        # print("attn_mask: ", attention_mask.shape)
         #input id works -----------------------------------------------------------
 
         #image loading works

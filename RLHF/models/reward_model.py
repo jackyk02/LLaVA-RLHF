@@ -71,7 +71,7 @@ def make_generative_vlm(
     qlora: bool = False,
     checkpoint_dir: Optional[str] = None,
     adapter_name="lora_default",
-    is_trainable=True,
+    is_trainable=False,
     reuse_base_model=False,
     tokenizer=None,
     **kwargs,
@@ -141,7 +141,7 @@ class RewardModelOutput(ModelOutput):
 
 class RewardModel(transformers.PreTrainedModel):
     config_class = RewardConfig
-    supports_gradient_checkpointing = True
+    supports_gradient_checkpointing = False
 
     def __init__(
         self,
@@ -180,7 +180,7 @@ class RewardModel(transformers.PreTrainedModel):
             else:
                 print(f"Warning: reward head not found at {reward_head_path}")
 
-        self.reward_head.requires_grad_(kwargs.get("is_trainable", True))
+        self.reward_head.requires_grad_(kwargs.get("is_trainable", False))
 
     def forward(
         self, input_ids, attention_mask=None, images=None, return_dict=True, **kwargs
@@ -188,7 +188,7 @@ class RewardModel(transformers.PreTrainedModel):
         # We only compute the rewards and don't compute the logistic regression loss in this function so that it's
         # easier to use for later stages of reranking / RL training.
         self.backbone_model.set_adapter(self.adapter_name)
-        self.backbone_model.config.use_cache = False
+        self.backbone_model.config.use_cache = True
 
         # print(input_ids.shape, images.shape, 'images', images.dtype)
         outputs = self.backbone_model(
@@ -349,7 +349,7 @@ def load_4bit_reward_model_for_inference(
     quant_type: str = "nf4",
     gradient_checkpointing: bool = False,
     adapter_name="lora_default",
-    is_trainable=True,
+    is_trainable=False,
     reuse_base_model=False,
     trust_remote_code=False,
 ):
