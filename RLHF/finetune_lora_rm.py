@@ -44,6 +44,7 @@ from llava.train.train import smart_tokenizer_and_embedding_resize
 from data_utils.common_utils import preprocess
 
 torch.backends.cuda.matmul.allow_tf32 = True
+torch.set_default_dtype(torch.bfloat16)
 
 logger = logging.getLogger(__name__)
 
