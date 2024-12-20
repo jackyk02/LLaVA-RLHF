@@ -248,6 +248,29 @@ def rank0_print(*args):
     if local_rank == 0:
         print(*args)
 
+def bridge_process(image, resize_size=256):
+    """
+    Takes in environment and observation and returns resized image as numpy array.
+
+    NOTE (Moo Jin): To make input images in distribution with respect to the inputs seen at training time, we follow
+                    the same resizing scheme used in the Octo dataloader, which OpenVLA uses for training.
+    """
+    import tensorflow as tf
+    # Preprocess the image the exact same way that the Berkeley Bridge folks did it
+    # to minimize distribution shift.
+    # NOTE (Moo Jin): Yes, we resize down to 256x256 first even though the image may end up being
+    # resized up to a different resolution by some models. This is just so that we're in-distribution
+    # w.r.t. the original preprocessing at train time.
+    IMAGE_BASE_PREPROCESS_SIZE = 128
+    # Resize to image size expected by model
+    image = tf.image.encode_jpeg(image)  # Encode as JPEG, as done in RLDS dataset builder
+    image = tf.io.decode_image(image, expand_animations=False, dtype=tf.uint8)  # Immediately decode back
+    image = tf.image.resize(
+        image, (IMAGE_BASE_PREPROCESS_SIZE, IMAGE_BASE_PREPROCESS_SIZE), method="lanczos3", antialias=True
+    )
+    image = tf.image.resize(image, (resize_size, resize_size), method="lanczos3", antialias=True)
+    image = tf.cast(tf.clip_by_value(tf.round(image), 0, 255), tf.uint8)
+    return image.numpy()
 
 
 class RobotRewardModel:
@@ -458,7 +481,12 @@ class RobotRewardModel:
         #image loading works
         from PIL import Image
         processor = self.data_args.image_processor
+        
         image = Image.open(image_path).convert("RGB")
+        image = bridge_process(image)
+        scaled_image = np.clip((image + 1) * 127.5, 0, 255).astype(np.uint8)
+        image = Image.fromarray(scaled_image).convert("RGB")
+
         if self.data_args.image_aspect_ratio == "pad":
             def expand2square(pil_img, background_color):
                 width, height = pil_img.size
