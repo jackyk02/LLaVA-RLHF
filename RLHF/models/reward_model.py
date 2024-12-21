@@ -300,18 +300,30 @@ class RewardModelTrainer(transformers.Trainer):
                 "images",
             ),
         )
-        # repeat images to match the number of candidates
-        images = images.unsqueeze(1).repeat(1, input_ids.size(1), 1, 1, 1)
-        images = einops.rearrange(images, "b n h w c -> (b n) h w c")
+        # print("images:", images)
+        # print("images shape:", images.shape)
+        # print("attention mask:", attention_mask)
+        # print("attention mask shape:", attention_mask.shape)
+        # print("input_ids:", input_ids) 
+        # print("input_ids shape:", input_ids.shape)
+        # print("index_0 shape:", index_0.shape)
+        # print("index_1 shape:", index_1.shape)
+        # print("choice shape:", choice.shape)
 
-        num_candidates, num_pairs = input_ids.size(1), choice.size(1)
-        input_ids_flat, attention_mask_flat = tuple(
-            einops.rearrange(x, "b c l -> (b c) l") for x in (input_ids, attention_mask)
-        )
+        images = images.repeat(2, 1, 1, 1)
+        attention_mask = attention_mask.squeeze(0)
+        input_ids = input_ids.squeeze(0)
+
+        print("input_ids shape:", input_ids.shape)
+        print("attention mask shape:", attention_mask.shape)
+        print("images shape:", images.shape)
+        
         outputs = model(
-            input_ids=input_ids_flat, attention_mask=attention_mask_flat, images=images
+            input_ids=input_ids, attention_mask=attention_mask, images=images
         )
         rewards_flat = outputs.rewards
+        print(rewards_flat)
+        print(rewards_flat.shape)
         rewards = einops.rearrange(
             rewards_flat, "(b c) -> b c", c=num_candidates
         )  # Size: (bsz, num_candidates).
