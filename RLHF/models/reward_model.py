@@ -91,6 +91,23 @@ def make_generative_vlm(
     else:
         raise ValueError(f"Unknown model type: {model_name_or_path}")
 
+def add_peft(model):
+    from peft import LoraConfig, get_peft_model
+    config = LoraConfig(
+        r=64,
+        lora_alpha=16,
+        target_modules=["q_proj","k_proj","v_proj","o_proj","gate_proj","up_proj", "down_proj"],
+        lora_dropout=0.1,
+        bias="none",
+        task_type="CAUSAL_LM",
+    )
+    model = get_peft_model(model, config, adapter_name="lora_default")
+    print(model)
+    # model = get_peft_model(model, config)
+    # model.print_trainable_parameters()
+    # model.add_adapter(config, adapter_name="lora_default")
+    return model
+
 
 def get_transformer_hidden_size(model: transformers.PreTrainedModel):
     if isinstance(model, PeftModel):
@@ -114,11 +131,11 @@ def get_transformer_hidden_size(model: transformers.PreTrainedModel):
         # Hack to deal with the fact that transformers library changed the LLaMA model name.
         llama_cls = getattr(
             transformers,
-            "LLaMAForCausalLM"
-            if hasattr(transformers, "LLaMAForCausalLM")
-            else "LlamaForCausalLM",
+            "Qwen2ForCausalLM"
+            if hasattr(transformers, "Qwen2ForCausalLM")
+            else "Qwen2ForCausalLM",
         )
-        if isinstance(model, llama_cls) or "LlamaForCausalLM" in str(type(model)):
+        if isinstance(model, llama_cls) or "Qwen2ForCausalLM" in str(type(model)):
             hidden_size_attr_name = "hidden_size"
         else:
             raise ValueError(f"Unknown base_model type: {type(model)}")
@@ -150,18 +167,13 @@ class RewardModel(transformers.PreTrainedModel):
         checkpoint_dir: Optional[str] = None,
         adapter_name="lora_default",
         tokenizer=None,
+        base_model=None,
         **kwargs,
     ):
         super(RewardModel, self).__init__(config)
         self.adapter_name = adapter_name
-        self.backbone_model = make_generative_vlm(
-            args,
-            config.backbone_model_name_or_path,
-            checkpoint_dir=checkpoint_dir,
-            adapter_name=adapter_name,
-            tokenizer=tokenizer,
-            **kwargs,
-        )
+        self.backbone_model = base_model
+        self.backbone_model = add_peft(self.backbone_model)
         hidden_size = get_transformer_hidden_size(self.backbone_model)
         reward_head = nn.Linear(hidden_size, 1)
         torch.nn.init.zeros_(reward_head.bias)

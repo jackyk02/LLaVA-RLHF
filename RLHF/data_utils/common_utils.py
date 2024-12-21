@@ -283,6 +283,7 @@ def preprocess_llama_2(
             max_length=tokenizer.model_max_length,
             truncation=True,
         ).input_ids
+        print(input_ids)
 
     targets = input_ids.clone()
     validity = [True] * len(input_ids)
@@ -433,7 +434,8 @@ def preprocess_v1(
         ).input_ids
     
     # print("input_ids!!!", input_ids)
-    repeated_indices = (input_ids == 22172).nonzero()
+    # print(input_ids)
+    repeated_indices = (input_ids == 23811).nonzero()
     start_idx = repeated_indices[0][1].item()  # Get the first occurrence
     end_idx = repeated_indices[-1][1].item() + 1  # Get the last occurrence + 1
     input_ids[0, start_idx:end_idx] = torch.tensor(action_ids[0])
