@@ -174,6 +174,7 @@ class RewardModel(transformers.PreTrainedModel):
         self.adapter_name = adapter_name
         self.backbone_model = base_model
         self.backbone_model = add_peft(self.backbone_model)
+        self.backbone_model.to(torch.bfloat16)
         hidden_size = get_transformer_hidden_size(self.backbone_model)
         reward_head = nn.Linear(hidden_size, 1)
         torch.nn.init.zeros_(reward_head.bias)
@@ -212,10 +213,13 @@ class RewardModel(transformers.PreTrainedModel):
             **kwargs,
         )
         last_hidden_state = outputs.hidden_states[-1]
+        print("last_hidden_state: ", last_hidden_state.shape)
         assert isinstance(last_hidden_state, torch.Tensor), f"{outputs}"
         # last_hidden_state = outputs.last_hidden_state
         # TODO(zhiqings): Hacking to make sure every parameter is used in the backward pass.
         logits = outputs.logits
+        print("logits: ", logits.shape)
+
         last_hidden_state = last_hidden_state + 0.0 * torch.mean(logits)
 
         last_hidden_state_at_the_end = last_hidden_state[:, -1, :]
@@ -226,8 +230,12 @@ class RewardModel(transformers.PreTrainedModel):
         last_hidden_state_at_the_end = last_hidden_state_at_the_end.type_as(
             self.reward_head.weight
         )
+        print("last_hidden_state_at_the_end: ", last_hidden_state_at_the_end.shape)
+
         # print(last_hidden_state_at_the_end.device, self.reward_head.weight.device, self.reward_head.bias.device)
         rewards = self.reward_head(last_hidden_state_at_the_end).squeeze(-1)
+        print("rewards: ", rewards.shape)
+
         return RewardModelOutput(rewards=rewards) if return_dict else (rewards,)
 
     def _set_gradient_checkpointing(self, module, value=False):
