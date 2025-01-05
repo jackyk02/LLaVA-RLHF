@@ -29,7 +29,7 @@ export WANDB_ENTITY="skyrobo"  # Replace with your wandb username or organizatio
 # TRAINING CONFIG
 NUM_EPOCHS=20
 LEARNING_RATE=2e-5
-BATCH_SIZE=45
+BATCH_SIZE=32
 GRAD_ACCUMULATION=1
 
 torchrun \
