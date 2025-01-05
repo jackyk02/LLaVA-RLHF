@@ -372,8 +372,9 @@ class RobotRewardModel:
 
         for action in actions:
             # Prepare conversation
-            if type(action) == int: 
-                action_id = int(action)
+            if isinstance(action, list) and all(isinstance(x, int) for x in action):
+                print(type(action))
+                action_id = action
             else:
                 action_id = action_tokenizer(action)
             holder = "hello hello hello hello hello hello hello" 
