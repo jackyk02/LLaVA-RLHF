@@ -436,7 +436,7 @@ def preprocess_v1(
     repeated_indices = (input_ids == 22172).nonzero()
     start_idx = repeated_indices[0][1].item()  # Get the first occurrence
     end_idx = repeated_indices[-1][1].item() + 1  # Get the last occurrence + 1
-    input_ids[0, start_idx:end_idx] = torch.tensor(action_ids[0])
+    input_ids[0, start_idx:end_idx] = torch.tensor(np.array(action_ids[0])-1000)
     # print("input_ids after:", input_ids)
 
     targets = input_ids.clone()

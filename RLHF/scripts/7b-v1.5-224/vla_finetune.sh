@@ -16,7 +16,7 @@ LM_MODEL_NAME=LLaVA-RLHF-7b-v1.5-224/sft_model/
 
 # DATA CONFIG
 #PREFERENCE_DATA=output_discretized.json
-PREFERENCE_DATA=vla_80k_comp.json
+PREFERENCE_DATA=vla_ground_comp.json
 
 # SAVE CONFIG
 MODEL_NAME=LLaVA-Fact-RM-7b-v1.5-224-lora-vla
