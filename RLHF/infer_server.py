@@ -412,7 +412,7 @@ class RobotRewardModel:
             repeated_indices = (in_ids == 22172).nonzero()
             start_idx = repeated_indices[0][1].item()  # Get the first occurrence
             end_idx = repeated_indices[-1][1].item() + 1  # Get the last occurrence + 1
-            in_ids[0, start_idx:end_idx] = torch.tensor(action_id)
+            in_ids[0, start_idx:end_idx] = torch.tensor(np.array(action_id)-1000)
 
             first_19464_idx = (in_ids == 19464).nonzero()
             start_idx = first_19464_idx[0][1].item()  # Get the first occurrence
