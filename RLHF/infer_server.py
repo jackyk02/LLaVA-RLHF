@@ -329,7 +329,7 @@ class RobotRewardModel:
                     args=args,
                     config=config,
                     qlora=True,
-                    checkpoint_dir="/root/LLaVA-RLHF/model_dir/checkpoint-1800",
+                    checkpoint_dir="/root/LLaVA-RLHF/model_dir/checkpoint",
                     tokenizer=tokenizer,
                 ).to(torch.bfloat16)
 
@@ -373,7 +373,7 @@ class RobotRewardModel:
         for action in actions:
             # Prepare conversation
             if isinstance(action, list) and all(isinstance(x, int) for x in action):
-                print(type(action))
+                # print(type(action))
                 action_id = action
             else:
                 action_id = action_tokenizer(action)
