@@ -267,7 +267,7 @@ def split_train_into_train_and_eval(
     
     # Calculate sizes
     total_size = len(train_dataset)
-    batch_size = 45
+    batch_size = 32
 
     # Adjust sizes to be multiples of batch_size
     new_train_size = (total_size - eval_size) // batch_size * batch_size
