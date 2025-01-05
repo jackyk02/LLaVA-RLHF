@@ -372,7 +372,10 @@ class RobotRewardModel:
 
         for action in actions:
             # Prepare conversation
-            action_id = action_tokenizer(action)
+            if type(action) == int: 
+                action_id = int(action)
+            else:
+                action_id = action_tokenizer(action)
             holder = "hello hello hello hello hello hello hello" 
             inp = (f"shows the current observation from the robot's wrist-mounted camera. "
                     f"The robot manipulation arm is attempting to {instruction}. "
