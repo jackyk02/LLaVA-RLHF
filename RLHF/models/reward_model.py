@@ -273,12 +273,12 @@ class RewardModelTrainer(transformers.Trainer):
 
         super(RewardModelTrainer, self)._save(output_dir, state_dict)
 
-    # original loss function
+    # bce + mse
     def compute_loss(self, model, inputs, return_outputs=False):
         # input_ids, attention_mask each of size (bsz, num_candidates, seq_len).
         # index_0, index_1 each of size (bsz, num_pairs); indexes into input_ids.
         # choice of size (bsz, num_pairs); 1 if index_1's seq is chosen, 0 otherwise.
-        input_ids, attention_mask, index_0, index_1, choice, images = unpack_dict(
+        input_ids, attention_mask, index_0, index_1, choice, images, nrmse_0, nrmse_1 = unpack_dict(
             inputs,
             keys=(
                 "input_ids",
@@ -287,8 +287,11 @@ class RewardModelTrainer(transformers.Trainer):
                 "index_1",
                 "choice",
                 "images",
+                "nrmse_0",
+                "nrmse_1"
             ),
         )
+        print(nrmse_0, nrmse_1)
         # repeat images to match the number of candidates
         images = images.unsqueeze(1).repeat(1, input_ids.size(1), 1, 1, 1)
         images = einops.rearrange(images, "b n h w c -> (b n) h w c")
@@ -309,15 +312,80 @@ class RewardModelTrainer(transformers.Trainer):
             batch_select(rewards, index) for index in (index_0, index_1)
         )  # Size: (bsz, num_pairs).
         logits = rewards_1 - rewards_0  # Size: (bsz, num_pairs).
-        # Type casting of `choice` is due to amp.autocast context manager.
-        loss = F.binary_cross_entropy_with_logits(
-            logits, choice.to(logits.dtype), reduction="mean"
+
+        # Prepare NRMSE values
+        nrmse_0 = nrmse_0.view(nrmse_0.size(0), 1)  # reshape to [batch_size, 1]
+        nrmse_1 = nrmse_1.view(nrmse_1.size(0), 1)  # reshape to [batch_size, 1]
+
+        # Calculate target difference for MSE loss
+        target_diff = nrmse_0 - nrmse_1  # If nrmse_1 < nrmse_0 => target_diff > 0
+        target_diff = target_diff.to(logits.dtype)
+
+        # Calculate losses
+        bce_loss = F.binary_cross_entropy_with_logits(
+            logits,
+            choice.to(logits.dtype),
+            reduction="mean"
         )
+        
+        # MSE loss between logits and NRMSE difference
+        mse_loss = F.mse_loss(logits, target_diff)
+        
+        # Combine losses with alpha parameter
+        alpha = 0.5  # hyperparameter to tune
+        loss = bce_loss + alpha * mse_loss
 
+        # Add regularization term
         loss = loss + (rewards_1 + rewards_0).mean().abs() * 1e-3
-
+        
         logged_rewards = torch.stack((rewards_1, rewards_0), dim=-1)
         return (loss, dict(logits=logged_rewards)) if return_outputs else loss
+
+    # original loss function
+    # def compute_loss(self, model, inputs, return_outputs=False):
+    #     # input_ids, attention_mask each of size (bsz, num_candidates, seq_len).
+    #     # index_0, index_1 each of size (bsz, num_pairs); indexes into input_ids.
+    #     # choice of size (bsz, num_pairs); 1 if index_1's seq is chosen, 0 otherwise.
+    #     input_ids, attention_mask, index_0, index_1, choice, images = unpack_dict(
+    #         inputs,
+    #         keys=(
+    #             "input_ids",
+    #             "attention_mask",
+    #             "index_0",
+    #             "index_1",
+    #             "choice",
+    #             "images",
+    #         ),
+    #     )
+    #     # repeat images to match the number of candidates
+    #     images = images.unsqueeze(1).repeat(1, input_ids.size(1), 1, 1, 1)
+    #     images = einops.rearrange(images, "b n h w c -> (b n) h w c")
+
+    #     num_candidates, num_pairs = input_ids.size(1), choice.size(1)
+    #     input_ids_flat, attention_mask_flat = tuple(
+    #         einops.rearrange(x, "b c l -> (b c) l") for x in (input_ids, attention_mask)
+    #     )
+    #     outputs = model(
+    #         input_ids=input_ids_flat, attention_mask=attention_mask_flat, images=images
+    #     )
+    #     rewards_flat = outputs.rewards
+    #     rewards = einops.rearrange(
+    #         rewards_flat, "(b c) -> b c", c=num_candidates
+    #     )  # Size: (bsz, num_candidates).
+
+    #     rewards_0, rewards_1 = tuple(
+    #         batch_select(rewards, index) for index in (index_0, index_1)
+    #     )  # Size: (bsz, num_pairs).
+    #     logits = rewards_1 - rewards_0  # Size: (bsz, num_pairs).
+    #     # Type casting of `choice` is due to amp.autocast context manager.
+    #     loss = F.binary_cross_entropy_with_logits(
+    #         logits, choice.to(logits.dtype), reduction="mean"
+    #     )
+
+    #     loss = loss + (rewards_1 + rewards_0).mean().abs() * 1e-3
+
+    #     logged_rewards = torch.stack((rewards_1, rewards_0), dim=-1)
+    #     return (loss, dict(logits=logged_rewards)) if return_outputs else loss
 
     # Scale weights
     # def compute_loss(self, model, inputs, return_outputs=False):
