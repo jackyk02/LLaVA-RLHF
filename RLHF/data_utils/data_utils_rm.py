@@ -125,6 +125,20 @@ def preprocess_for_reward_modeling(
         list(pair) for pair in utils.zip_(text_list_0["labels"], text_list_1["labels"])
     ]
 
+    def _get_nrsme0(example: dict):
+        return [float(example["nrmse_0"])]
+
+    nrmse_0 = torch.tensor(
+        [[_get_nrsme0(dict_data)] for dict_data in list_dict_data]
+    )
+
+    def _get_nrsme1(example: dict):
+        return [float(example["nrmse_1"])]
+
+    nrmse_1 = torch.tensor(
+        [[_get_nrsme1(dict_data)] for dict_data in list_dict_data]
+    )
+    
     packaged_data = dict(
         input_ids=input_ids,
         labels=labels,
@@ -133,6 +147,8 @@ def preprocess_for_reward_modeling(
         choice=choice,
         merged_valid=merged_valid,
         metadata=dict(mean_choice=choice.float().mean().item()),
+        nrmse_0 = nrmse_0,
+        nrmse_1 = nrmse_1
     )
 
     return packaged_data
@@ -239,6 +255,8 @@ class BinaryRewardModelingDataset(Dataset):
                 choice=data_dict["choice"][0],
                 index_0=data_dict["index_0"][0],
                 index_1=data_dict["index_1"][0],
+                nrmse_0=data_dict["nrmse_0"][0],
+                nrmse_1=data_dict["nrmse_1"][0],
             )
 
         # image exist in the data
@@ -347,9 +365,9 @@ class DataCollatorForBinaryRewardModelingDataset(object):
         return input_ids
 
     def __call__(self, instances: Sequence[Dict]) -> Dict[str, torch.Tensor]:
-        index_0, index_1, choice = tuple(
+        index_0, index_1, choice, nrmse_0, nrmse_1 = tuple(
             torch.stack([instance[key] for instance in instances])
-            for key in ("index_0", "index_1", "choice")
+            for key in ("index_0", "index_1", "choice", "nrmse_0", "nrmse_1")
         )
         input_ids = self._left_pad_helper(instances, "input_ids")
         attention_mask = input_ids.ne(self.tokenizer.pad_token_id).long()
@@ -360,6 +378,8 @@ class DataCollatorForBinaryRewardModelingDataset(object):
             index_0=index_0,
             index_1=index_1,
             choice=choice,
+            nrmse_0=nrmse_0,
+            nrmse_1=nrmse_1
         )
 
         if "image" in instances[0]:

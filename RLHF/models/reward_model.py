@@ -277,7 +277,7 @@ class RewardModelTrainer(transformers.Trainer):
         # input_ids, attention_mask each of size (bsz, num_candidates, seq_len).
         # index_0, index_1 each of size (bsz, num_pairs); indexes into input_ids.
         # choice of size (bsz, num_pairs); 1 if index_1's seq is chosen, 0 otherwise.
-        input_ids, attention_mask, index_0, index_1, choice, images = unpack_dict(
+        input_ids, attention_mask, index_0, index_1, choice, images, nrmse_0, nrmse_1 = unpack_dict(
             inputs,
             keys=(
                 "input_ids",
@@ -286,8 +286,11 @@ class RewardModelTrainer(transformers.Trainer):
                 "index_1",
                 "choice",
                 "images",
+                "nrmse_0",
+                "nrmse_1"
             ),
         )
+        print(nrmse_0, nrmse_1)
         # repeat images to match the number of candidates
         images = images.unsqueeze(1).repeat(1, input_ids.size(1), 1, 1, 1)
         images = einops.rearrange(images, "b n h w c -> (b n) h w c")

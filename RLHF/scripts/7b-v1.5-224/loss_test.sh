@@ -15,7 +15,7 @@ VISION_TOWER=openai/clip-vit-large-patch14-336
 LM_MODEL_NAME=LLaVA-RLHF-7b-v1.5-224/sft_model/
 
 # DATA CONFIG
-PREFERENCE_DATA=vla_ground_comp.json
+PREFERENCE_DATA=loss_test.json
 
 # SAVE CONFIG
 MODEL_NAME=LLaVA-Fact-RM-7b-v1.5-224-loss-test
@@ -67,7 +67,7 @@ torchrun \
     --evaluation_strategy "steps" \
     --eval_steps 100 \
     --save_strategy "steps" \
-    --save_steps 200 \
+    --save_steps 100 \
     --save_total_limit 10 \
     --weight_decay 0.0 \
     --warmup_ratio 0.03 \
