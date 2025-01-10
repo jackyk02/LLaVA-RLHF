@@ -19,7 +19,7 @@ LM_MODEL_NAME=LLaVA-RLHF-7b-v1.5-224/sft_model/
 PREFERENCE_DATA=vla_80k_comp_nrmse.json
 
 # SAVE CONFIG
-MODEL_NAME=LLaVA-Fact-RM-7b-v1.5-224-lora-vla-scale-weights
+MODEL_NAME=LLaVA-Fact-RM-7b-v1.5-224-lora-vla-bce-mse-loss
 
 # WANDB CONFIG
 export WANDB_PROJECT="llava-nrmse-loss"
