@@ -273,11 +273,12 @@ class RewardModelTrainer(transformers.Trainer):
 
         super(RewardModelTrainer, self)._save(output_dir, state_dict)
 
+    # original loss function
     def compute_loss(self, model, inputs, return_outputs=False):
         # input_ids, attention_mask each of size (bsz, num_candidates, seq_len).
         # index_0, index_1 each of size (bsz, num_pairs); indexes into input_ids.
         # choice of size (bsz, num_pairs); 1 if index_1's seq is chosen, 0 otherwise.
-        input_ids, attention_mask, index_0, index_1, choice, images, nrmse_0, nrmse_1 = unpack_dict(
+        input_ids, attention_mask, index_0, index_1, choice, images = unpack_dict(
             inputs,
             keys=(
                 "input_ids",
@@ -286,11 +287,8 @@ class RewardModelTrainer(transformers.Trainer):
                 "index_1",
                 "choice",
                 "images",
-                "nrmse_0",
-                "nrmse_1"
             ),
         )
-        print(nrmse_0, nrmse_1)
         # repeat images to match the number of candidates
         images = images.unsqueeze(1).repeat(1, input_ids.size(1), 1, 1, 1)
         images = einops.rearrange(images, "b n h w c -> (b n) h w c")
@@ -320,6 +318,81 @@ class RewardModelTrainer(transformers.Trainer):
 
         logged_rewards = torch.stack((rewards_1, rewards_0), dim=-1)
         return (loss, dict(logits=logged_rewards)) if return_outputs else loss
+
+    # Scale weights
+    # def compute_loss(self, model, inputs, return_outputs=False):
+    #     # input_ids, attention_mask each of size (bsz, num_candidates, seq_len).
+    #     # index_0, index_1 each of size (bsz, num_pairs); indexes into input_ids.
+    #     # choice of size (bsz, num_pairs); 1 if index_1's seq is chosen, 0 otherwise.
+    #     input_ids, attention_mask, index_0, index_1, choice, images, nrmse_0, nrmse_1 = unpack_dict(
+    #         inputs,
+    #         keys=(
+    #             "input_ids",
+    #             "attention_mask",
+    #             "index_0",
+    #             "index_1",
+    #             "choice",
+    #             "images",
+    #             "nrmse_0",
+    #             "nrmse_1"
+    #         ),
+    #     )
+    #     print(nrmse_0, nrmse_1)
+    #     # repeat images to match the number of candidates
+    #     images = images.unsqueeze(1).repeat(1, input_ids.size(1), 1, 1, 1)
+    #     images = einops.rearrange(images, "b n h w c -> (b n) h w c")
+
+    #     num_candidates, num_pairs = input_ids.size(1), choice.size(1)
+    #     input_ids_flat, attention_mask_flat = tuple(
+    #         einops.rearrange(x, "b c l -> (b c) l") for x in (input_ids, attention_mask)
+    #     )
+    #     outputs = model(
+    #         input_ids=input_ids_flat, attention_mask=attention_mask_flat, images=images
+    #     )
+    #     rewards_flat = outputs.rewards
+    #     rewards = einops.rearrange(
+    #         rewards_flat, "(b c) -> b c", c=num_candidates
+    #     )  # Size: (bsz, num_candidates).
+
+    #     rewards_0, rewards_1 = tuple(
+    #         batch_select(rewards, index) for index in (index_0, index_1)
+    #     )  # Size: (bsz, num_pairs).
+    #     logits = rewards_1 - rewards_0  # Size: (bsz, num_pairs).
+    #     # Type casting of `choice` is due to amp.autocast context manager.
+    #     # Ensure nrmse tensors have the correct shape
+    #     nrmse_0 = nrmse_0.view(nrmse_0.size(0), 1)  # reshape to [batch_size, 1]
+    #     nrmse_1 = nrmse_1.view(nrmse_1.size(0), 1)  # reshape to [batch_size, 1]
+
+    #     # Calculate NRMSE differences
+    #     nrmse_diff = torch.abs(nrmse_0 - nrmse_1)  # Should now be [batch_size, 1]
+    #     nrmse_diff = nrmse_diff.to(logits.dtype)
+
+    #     # Normalize NRMSE differences within each batch
+    #     # Add small epsilon to avoid division by zero
+    #     nrmse_min = nrmse_diff.min(dim=0, keepdim=True)[0]
+    #     nrmse_max = nrmse_diff.max(dim=0, keepdim=True)[0]
+    #     preference_weights = (nrmse_diff - nrmse_min) / (nrmse_max - nrmse_min + 1e-6)
+        
+    #     # Scale weights
+    #     weight_scale = 2.0
+    #     preference_weights = weight_scale * preference_weights + 1.0
+        
+    #     # Ensure shapes match for BCE loss
+    #     preference_weights = preference_weights.view_as(logits)
+    #     choice = choice.view_as(logits)
+        
+    #     # Apply weighted BCE loss
+    #     loss = F.binary_cross_entropy_with_logits(
+    #         logits,
+    #         choice.to(logits.dtype),
+    #         weight=preference_weights,
+    #         reduction="mean"
+    #     )
+        
+    #     # Rest of the code remains the same
+    #     loss = loss + (rewards_1 + rewards_0).mean().abs() * 1e-3
+    #     logged_rewards = torch.stack((rewards_1, rewards_0), dim=-1)
+    #     return (loss, dict(logits=logged_rewards)) if return_outputs else loss
 
 
 def compute_reward_modeling_metrics(eval_prediction: EvalPrediction) -> Dict:
