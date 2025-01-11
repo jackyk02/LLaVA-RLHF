@@ -60,7 +60,7 @@ torchrun \
     --eval_dataset_name "none" \
     --eval_size 512 \
     --bits 16 \
-    --lora_r 64 \
+    --lora_r 128 \
     --lora_modules q_proj k_proj v_proj o_proj gate_proj up_proj down_proj \
     --output_dir "$MODEL_DIR/$MODEL_NAME" \
     --num_train_epochs $NUM_EPOCHS \
