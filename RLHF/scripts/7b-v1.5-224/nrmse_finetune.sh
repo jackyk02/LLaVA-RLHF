@@ -16,10 +16,10 @@ LM_MODEL_NAME=LLaVA-RLHF-7b-v1.5-224/sft_model/
 
 # DATA CONFIG
 #PREFERENCE_DATA=output_discretized.json
-PREFERENCE_DATA=vla_80k_comp_nrmse.json
+PREFERENCE_DATA=vla_comp_nrmse.json
 
 # SAVE CONFIG
-MODEL_NAME=LLaVA-Fact-RM-7b-v1.5-224-lora-vla-bce-mse-loss-shuffle
+MODEL_NAME=LLaVA-Fact-RM-7b-v1.5-224-lora-vla-bce-mse-loss
 
 # WANDB CONFIG
 export WANDB_PROJECT="llava-nrmse-loss"
@@ -58,7 +58,7 @@ torchrun \
     --eval_dataset_path $DATA_DIR/$PREFERENCE_DATA \
     --dataset_name "none" \
     --eval_dataset_name "none" \
-    --eval_size 512 \
+    --eval_size 1024 \
     --bits 16 \
     --lora_r 64 \
     --lora_modules q_proj k_proj v_proj o_proj gate_proj up_proj down_proj \
