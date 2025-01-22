@@ -17,6 +17,7 @@ import argparse
 import glob
 import os
 import random
+import re
 from typing import (
     Callable,
     Dict,
@@ -376,68 +377,74 @@ def preprocess_v1(
 
         reward_model_prompt_per_example = reward_model_prompt
 
-        # if (
-        #     image_captions is not None
-        #     and r"{factual_prompt}" in reward_model_prompt_per_example
-        # ):
-        #     factual_prompt = FACTUAL_PROMPT
-        #     for caption in image_captions[i]:
-        #         factual_prompt = factual_prompt + f"  - {caption}\n"
-        #     reward_model_prompt_per_example = reward_model_prompt_per_example.format(
-        #         factual_prompt=factual_prompt
-        #     )
-
-        # if reward_model_prompt_per_example is None:
-        #     conversations.append(conv.get_prompt())
-        # else:
-        # print(conv.get_prompt() + reward_model_prompt_per_example + "</s>")
         conversations.append(
             conv.get_prompt() + reward_model_prompt_per_example + "</s>"
         )
-    # Tokenize conversations
-    #process action inputs
-    def extract_array(s):
-        import re
-        # Find all numbers in square brackets
-        matches = re.findall(r'\[([\d, ]+)\]', s)
-        if matches:
-            # Convert the first match into a list of integers
-            return [int(num) for num in matches[0].split(',')]
-        return []
 
-    new_conversations = []
-    action_ids = []
-    for prompt in conversations:
-        id = extract_array(prompt)
-        action_ids.append(id)
-        # hello is 22172
-        prompt = prompt.replace(str(id), "hello hello hello hello hello hello hello ")
-        new_conversations.append(prompt)
-    conversations = new_conversations
+    def extract_action_ids(text):
+        """
+        Extract array of integers from a string containing numbers in square brackets.
+        
+        Args:
+            text (str): Input string containing numbers in square brackets [1,2,3]
+            
+        Returns:
+            list[int]: List of extracted integers, or empty list if no matches found
+        """
+        matches = re.findall(r'\[([\d, ]+)\]', text)
+        if not matches:
+            return []
+        return [int(num) for num in matches[0].split(',')]
 
-    if has_image:
-        input_ids = torch.stack(
-            [
+    def preprocess_conversations(conversations, has_image, tokenizer):
+        """
+        Preprocess conversation texts by replacing action IDs and tokenizing.
+        
+        Args:
+            conversations (list[str]): List of conversation texts
+            has_image (bool): Whether the input contains images
+            tokenizer: The tokenizer instance to use
+            
+        Returns:
+            torch.Tensor: Processed input IDs with replaced action tokens
+        """
+        # Extract action IDs and replace them in conversations
+        processed_conversations = []
+        action_ids = []
+        
+        for conversation in conversations:
+            ids = extract_action_ids(conversation)
+            action_ids.append(ids)
+            # Replace numeric IDs with placeholder tokens
+            processed_text = conversation.replace(str(ids), "placeholder " * 7)
+            processed_conversations.append(processed_text)
+        
+        # Tokenize the processed conversations
+        if has_image:
+            input_ids = torch.stack([
                 tokenizer_image_token(prompt, tokenizer, return_tensors="pt")
-                for prompt in conversations
-            ],
-            dim=0,
-        )
-    else:
-        input_ids = tokenizer(
-            conversations,
-            return_tensors="pt",
-            padding="longest",
-            max_length=tokenizer.model_max_length,
-            truncation=True,
-        ).input_ids
-    
-    # print("input_ids!!!", input_ids)
-    repeated_indices = (input_ids == 22172).nonzero()
-    start_idx = repeated_indices[0][1].item()  # Get the first occurrence
-    end_idx = repeated_indices[-1][1].item() + 1  # Get the last occurrence + 1
-    input_ids[0, start_idx:end_idx] = torch.tensor(np.array(action_ids[0])-1000)
-    # print("input_ids after:", input_ids)
+                for prompt in processed_conversations
+            ], dim=0)
+        else:
+            input_ids = tokenizer(
+                processed_conversations,
+                return_tensors="pt",
+                padding="longest",
+                max_length=tokenizer.model_max_length,
+                truncation=True,
+            ).input_ids
+        
+        # Replace placeholder tokens with action IDs
+        if action_ids[0]:  # Only process if we have action IDs
+            placeholder_positions = (input_ids == 12983).nonzero()
+            if len(placeholder_positions) > 0:
+                start_idx = placeholder_positions[0][1].item()
+                end_idx = placeholder_positions[-1][1].item() + 1
+                input_ids[0, start_idx:end_idx] = torch.tensor(np.array(action_ids[0]) - 1000)
+        
+        return input_ids
+
+    input_ids = preprocess_conversations(conversations, has_image=has_image, tokenizer=tokenizer)
 
     targets = input_ids.clone()
     validity = [True] * len(input_ids)
