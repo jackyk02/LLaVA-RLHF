@@ -128,12 +128,12 @@ def preprocess_for_reward_modeling(
     def _get_nrsme0(example: dict):
         return [float(example["nrmse_0"])]
 
+    def _get_nrsme1(example: dict):
+        return [float(example["nrmse_1"])]
+
     nrmse_0 = torch.tensor(
         [[_get_nrsme0(dict_data)] for dict_data in list_dict_data]
     )
-
-    def _get_nrsme1(example: dict):
-        return [float(example["nrmse_1"])]
 
     nrmse_1 = torch.tensor(
         [[_get_nrsme1(dict_data)] for dict_data in list_dict_data]
@@ -303,18 +303,6 @@ def split_train_into_train_and_eval(
     eval_subset = torch.utils.data.Subset(train_dataset, eval_indices)
 
     return train_subset, eval_subset
-    
-# def split_train_into_train_and_eval(
-#     train_dataset: Dataset, eval_size: int, seed: int
-# ) -> Tuple[Dataset, Dataset]:
-#     assert eval_size < len(
-#         train_dataset  # noqa
-#     ), "Requested eval_size cannot be equal/larger than original train data size."
-#     new_train_size = len(train_dataset) - eval_size  # noqa
-#     train_dataset, eval_dataset = torch.utils.data.random_split(
-#         train_dataset, [new_train_size, eval_size], generator=_get_generator(seed)
-#     )
-#     return train_dataset, eval_dataset
 
 
 def pad_sequence_from_left(

@@ -15,7 +15,7 @@ VISION_TOWER=openai/clip-vit-large-patch14-336
 LM_MODEL_NAME=LLaVA-RLHF-7b-v1.5-224/sft_model/
 
 # DATA CONFIG
-PREFERENCE_DATA=loss_test.json
+PREFERENCE_DATA=vla_80k_comp_nrmse.json
 
 # SAVE CONFIG
 MODEL_NAME=LLaVA-Fact-RM-7b-v1.5-224-loss-test

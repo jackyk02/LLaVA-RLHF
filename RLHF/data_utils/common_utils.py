@@ -337,10 +337,6 @@ def preprocess_llama_2(
             if cur_len != total_len:
                 if mask_target:
                     target[:] = IGNORE_INDEX
-                # print(
-                    # f"WARNING: tokenization mismatch: {cur_len} vs. {total_len}."
-                    # f" (ignored)"
-                # )
 
     return dict(
         input_ids=input_ids,
@@ -459,7 +455,7 @@ def preprocess_v1(
         total_len = int(target.ne(tokenizer.pad_token_id).sum())
 
         rounds = conversation.split(conv.sep2)
-        cur_len = 1 + 1
+        cur_len = 2
         if mask_target:
             target[:cur_len] = IGNORE_INDEX
 
@@ -475,10 +471,10 @@ def preprocess_v1(
             parts[0] += sep
 
             if has_image:
-                round_len = len(tokenizer_image_token(rou, tokenizer)) - 2 + 1
+                round_len = len(tokenizer_image_token(rou, tokenizer)) - 1
                 instruction_len = len(tokenizer_image_token(parts[0], tokenizer)) - 2
             else:
-                round_len = len(tokenizer(rou).input_ids) - 2 + 1
+                round_len = len(tokenizer(rou).input_ids) - 1
                 instruction_len = len(tokenizer(parts[0]).input_ids) - 2
 
             if mask_target:
@@ -505,10 +501,6 @@ def preprocess_v1(
             if cur_len != total_len:
                 if mask_target:
                     target[:] = IGNORE_INDEX
-                print(
-                    f"WARNING: tokenization mismatch: {cur_len} vs. {total_len}."
-                    f" (ignored)"
-                )
 
     if reward_model_prompt is None:
         return dict(
