@@ -328,11 +328,14 @@ class RewardModelTrainer(transformers.Trainer):
             reduction="mean"
         )
         
+        eps = 1e-8
+        target_diff = (target_diff - target_diff.min()) / (target_diff.max() - target_diff.min() + eps)
+
         # MSE loss between logits and NRMSE difference
-        mse_loss = F.mse_loss(logits, target_diff)
+        mse_loss = F.mse_loss(torch.sigmoid(logits), target_diff)
         
         # Combine losses with alpha parameter
-        alpha = 0.2  # hyperparameter to tune
+        alpha = 0.5  # hyperparameter to tune
 
         # Add regularization term
         regularization = (rewards_1 + rewards_0).mean().abs() * 1e-3
