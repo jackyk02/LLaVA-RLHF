@@ -16,13 +16,13 @@ LM_MODEL_NAME=LLaVA-RLHF-7b-v1.5-224/sft_model/
 
 # DATA CONFIG
 #PREFERENCE_DATA=output_discretized.json
-PREFERENCE_DATA=vla_comp_nrmse.json
+PREFERENCE_DATA=vla_224_nrmse.json
 
 # SAVE CONFIG
-MODEL_NAME=LLaVA-RM-7b-224-lora-vla-bce-mse-
+MODEL_NAME=LLaVA-RM-7b-224-lora-vla-bce-mse-alpha0.2
 
 # WANDB CONFIG
-export WANDB_PROJECT="llava-nrmse-loss"
+export WANDB_PROJECT="llava-224-nrmse-ground"
 export WANDB_NAME="$MODEL_NAME-$(date +%Y%m%d_%H%M%S)"
 export WANDB_ENTITY="skyrobo"  # Replace with your wandb username or organization
 

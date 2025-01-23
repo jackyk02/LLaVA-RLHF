@@ -332,7 +332,7 @@ class RewardModelTrainer(transformers.Trainer):
         mse_loss = F.mse_loss(logits, target_diff)
         
         # Combine losses with alpha parameter
-        alpha = 0.35  # hyperparameter to tune
+        alpha = 0.2  # hyperparameter to tune
 
         # Add regularization term
         regularization = (rewards_1 + rewards_0).mean().abs() * 1e-3
