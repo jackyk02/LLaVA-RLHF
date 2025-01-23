@@ -69,7 +69,7 @@ torchrun \
     --eval_steps 100 \
     --save_strategy "steps" \
     --save_steps 200 \
-    --save_total_limit 10 \
+    --save_total_limit 20 \
     --weight_decay 0.0 \
     --warmup_ratio 0.03 \
     --lr_scheduler_type "constant_with_warmup" \
