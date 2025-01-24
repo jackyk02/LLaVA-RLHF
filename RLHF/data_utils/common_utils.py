@@ -396,13 +396,14 @@ def preprocess_v1(
         )
     # Tokenize conversations
     #process action inputs
-    def extract_number(text):
-        target_line = [line for line in text.split('\n') if "robot should take the action:" in line][0]
-        return int(target_line.strip().split(':')[-1].strip())
+    def extract_number(s):
+        number = ''.join(filter(str.isdigit, s))
+        return int(number) if number else None
 
     new_conversations = []
     action_ids = []
     for prompt in conversations:
+        # print(prompt)
         id = extract_number(prompt)
         action_ids.append(id)
         # hello is 22172
@@ -427,13 +428,13 @@ def preprocess_v1(
             truncation=True,
         ).input_ids
     
-    print("input_ids!!!", input_ids)
+    # print("input_ids!!!", input_ids)
     repeated_indices = (input_ids == 22172).nonzero()
     idx = repeated_indices[0][1].item()  # Get the single occurrence
-    input_ids[0, idx] = torch.tensor(action_ids[0]-1000)  # No need for -1000 offset
-    print("input_ids after:", input_ids)
-    import sys 
-    sys.exit()
+    input_ids[0, idx] = torch.tensor(action_ids[0]-1000)
+    # print("input_ids after:", input_ids)
+    # import sys 
+    # sys.exit()
 
     targets = input_ids.clone()
     validity = [True] * len(input_ids)

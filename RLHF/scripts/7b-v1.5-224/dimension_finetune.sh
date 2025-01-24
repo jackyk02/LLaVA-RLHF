@@ -22,7 +22,7 @@ PREFERENCE_DATA=vla_comparisons_dim_0.json
 MODEL_NAME=LLaVA-Fact-RM-7b-v1.5-224-lora-vla-dim0
 
 # WANDB CONFIG
-export WANDB_PROJECT="llava-vla"
+export WANDB_PROJECT="llava-dim"
 export WANDB_NAME="$MODEL_NAME-$(date +%Y%m%d_%H%M%S)"
 export WANDB_ENTITY="skyrobo"  # Replace with your wandb username or organization
 
