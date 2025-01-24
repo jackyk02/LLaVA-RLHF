@@ -16,6 +16,7 @@
 import argparse
 import glob
 import os
+import re
 import random
 from typing import (
     Callable,
@@ -396,17 +397,20 @@ def preprocess_v1(
         )
     # Tokenize conversations
     #process action inputs
-    def extract_number(s):
-        number = ''.join(filter(str.isdigit, s))
-        return int(number) if number else None
+    def extract_number_regex(s):
+        # Regular expression to match "action:" followed by any characters and digits before "</s>"
+        match = re.search(r'action:\s*(\d+)</s>', s)
+        if match:
+            return int(match.group(1))  # Return the matched digits as an integer
+        return None
 
     new_conversations = []
     action_ids = []
     for prompt in conversations:
         # print(prompt)
-        id = extract_number(prompt)
+        id = extract_number_regex(prompt)
         action_ids.append(id)
-        # hello is 22172
+        # hello is 22172[]
         prompt = prompt.replace(str(id), "hello ")
         new_conversations.append(prompt)
     conversations = new_conversations

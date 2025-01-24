@@ -16,10 +16,10 @@ LM_MODEL_NAME=LLaVA-RLHF-7b-v1.5-224/sft_model/
 
 # DATA CONFIG
 #PREFERENCE_DATA=output_discretized.json
-PREFERENCE_DATA=vla_comparisons_dim_0.json
+PREFERENCE_DATA=vla_comparisons_dim_6.json
 
 # SAVE CONFIG
-MODEL_NAME=LLaVA-Fact-RM-7b-v1.5-224-lora-vla-dim0
+MODEL_NAME=LLaVA-Fact-RM-7b-v1.5-224-lora-vla-dim6
 
 # WANDB CONFIG
 export WANDB_PROJECT="llava-dim"
