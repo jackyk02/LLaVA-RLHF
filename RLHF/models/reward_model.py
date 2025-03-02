@@ -159,6 +159,7 @@ class RewardModel(transformers.PreTrainedModel):
         model = LlavaLlamaForCausalLM.from_pretrained(
             config.backbone_model_name_or_path,
             device_map="auto",
+            low_cpu_mem_usage=True, 
             torch_dtype=torch.bfloat16,
         )
 
@@ -170,6 +171,8 @@ class RewardModel(transformers.PreTrainedModel):
             lora_path,
             adapter_name=adapter_name,
         )
+
+        # self.backbone_model = self.backbone_model.merge_and_unload()
 
         hidden_size = get_transformer_hidden_size(self.backbone_model)
         reward_head = nn.Linear(hidden_size, 1)

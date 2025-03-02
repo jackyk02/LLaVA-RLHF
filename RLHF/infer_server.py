@@ -331,7 +331,7 @@ class RobotRewardModel:
                     qlora=True,
                     checkpoint_dir="/root/LLaVA-RLHF/model_dir/checkpoint",
                     tokenizer=tokenizer,
-                ).to(torch.bfloat16)
+                )
 
             model.backbone_model.config.use_cache = True
             print_trainable_parameters(args, model)
