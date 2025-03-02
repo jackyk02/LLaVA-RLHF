@@ -154,27 +154,21 @@ class RewardModel(transformers.PreTrainedModel):
     ):
         super(RewardModel, self).__init__(config)
         self.adapter_name = adapter_name
-        # self.backbone_model = make_generative_vlm(
-        #     args,
-        #     config.backbone_model_name_or_path,
-        #     checkpoint_dir=checkpoint_dir,
-        #     adapter_name=adapter_name,
-        #     tokenizer=tokenizer,
-        #     **kwargs,
-        # )
-        dtype = torch.bfloat16
-        model_path = config.backbone_model_name_or_path #"LLaVA-RLHF-7b-v1.5-224/sft_model"
-        lora_path = checkpoint_dir #"LLaVA-RLHF-7b-v1.5-224/rlhf_lora_adapter_model"
-        lora_path = os.path.join(lora_path, "adapter_model", "lora_default")
+
+        # Load the base model
         model = LlavaLlamaForCausalLM.from_pretrained(
-            model_path,
-            device_map={"": "cuda:0"},
-            torch_dtype=dtype,
+            config.backbone_model_name_or_path,
+            device_map="auto",
+            torch_dtype=torch.bfloat16,
         )
+
+        lora_path = os.path.join(checkpoint_dir, "adapter_model", "lora_default")
+        
+        # Load the LoRA adapter
         self.backbone_model = PeftModel.from_pretrained(
             model,
             lora_path,
-            adapter_name=adapter_name, #"rlhf_adapter"  # Set your adapter name here
+            adapter_name=adapter_name,
         )
 
         hidden_size = get_transformer_hidden_size(self.backbone_model)
