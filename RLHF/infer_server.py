@@ -486,9 +486,9 @@ class RobotRewardModel:
         processor = self.data_args.image_processor
         
         image = Image.open(image_path).convert("RGB")
-        image = bridge_process(image)
-        scaled_image = np.clip((image + 1) * 127.5, 0, 255).astype(np.uint8)
-        image = Image.fromarray(scaled_image).convert("RGB")
+        # image = bridge_process(image)
+        # scaled_image = np.clip((image + 1) * 127.5, 0, 255).astype(np.uint8)
+        # image = Image.fromarray(scaled_image).convert("RGB")
 
         if self.data_args.image_aspect_ratio == "pad":
             def expand2square(pil_img, background_color):
@@ -507,14 +507,14 @@ class RobotRewardModel:
                     )
                     result.paste(pil_img, ((height - width) // 2, 0))
                     return result
-            def resize_to_256(pil_img):
-                width, height = pil_img.size
-                if width == 256 and height == 256:
-                    return pil_img
-                else:
-                    return pil_img.resize((256, 256), Image.Resampling.LANCZOS)
+            # def resize_to_256(pil_img):
+            #     width, height = pil_img.size
+            #     if width == 256 and height == 256:
+            #         return pil_img
+            #     else:
+            #         return pil_img.resize((256, 256), Image.Resampling.LANCZOS)
 
-            image = resize_to_256(image)
+            # image = resize_to_256(image)
             image = expand2square(
                 image, tuple(int(x * 255) for x in processor.image_mean)
             )
